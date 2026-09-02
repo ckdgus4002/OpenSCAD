@@ -3,7 +3,7 @@
 // 필요:
 //   1) OpenSCAD 개발 스냅샷 (2021.01 불가)
 //   2) KeyV2 폴더 안에 이 파일을 둘 것
-//   3) BOSL2 (라이브러리 폴더에 설치. rect / ring / cumsum 등 2D/리스트 유틸)
+//   3) BOSL2 (/Users/lch/Documents/OpenSCAD/libraries/BOSL2 폴더에 설치. rect / ring / cumsum 등 2D/리스트 유틸)
 //   4) 같은 폴더에 DejaVuSansMono.ttf
 //      맥 기본 폰트에는 DejaVu 가 없어 cmd/opt/ctrl/bksp/del/space/화살표 각인이 깨진다
 
@@ -77,7 +77,7 @@
 //   RIGHT_SHIFT_DEPTH_TRIM               : 우측 시프트 높이 미세조정
 //   위 세 값의 근거와 재는 방법은 각 상수 주석에 적어 뒀다
 
-include <./includes.scad>
+include <./KeyV2/includes.scad>
 include <BOSL2/std.scad>     // 반드시 KeyV2 뒤에 include 할 것.
                              //   BOSL2 가 LEFT / RIGHT 를 전역 상수로 쓰므로
                              //   이 파일의 반쪽 배열은 LEFT_HALF / RIGHT_HALF 로 둔다
