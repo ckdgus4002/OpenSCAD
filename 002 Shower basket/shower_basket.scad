@@ -1,14 +1,11 @@
 // =============================================================
 //  Parametric Honeycomb Shower Basket  (BOSL2)
-//  200(W) x 120(D) x 75(H) + 받침대 20mm = 총 높이 95mm
 //  require: BOSL2  https://github.com/BelfrySCAD/BOSL2
 // =============================================================
 include <BOSL2/std.scad>
 
 /* [기본 치수 (mm)] */
-// 너비 (X)
-width  = 200;
-// 깊이 (Y)
+width  = 275;
 depth  = 120;
 // 몸통 높이 (Z) ※ 받침대 제외
 height = 75;
@@ -16,17 +13,13 @@ height = 75;
 /* [두께] */
 // ★ 기본 두께 (벽 / 바닥 / 벌집 살 공통) — 여기만 바꾸면 전체가 따라감
 thickness = 4;
-// 벽 두께
 wall     = thickness;
-// 바닥판 두께
 floor_th = thickness;
-// 바깥 모서리 라운드 반경
 corner_r = 10;
 
 /* [벌집 패턴] */
 // 육각 구멍 크기 (마주보는 면 사이 거리)
 hex_size = 13;
-// 육각 사이 살 두께
 hex_web  = thickness;
 
 /* [테두리 / 보강] */
@@ -56,15 +49,14 @@ feet_r = hex_size / 2;
 //       짝수 줄은 i=0 이 정중앙, 홀수 줄은 i=0 이 중앙에서 반 칸 오른쪽
 //       -> 짝수 줄에 0 을 넣으면 정중앙 1개가 생김
 foot_layout = [
-    [-4, [1, 4]],   // 아래줄  : 좌우 대칭 4개
-    [ 0, [0, 3]],   // 가운데줄: 정중앙 1개 + 좌우 2개 = 3개
-    [ 4, [1, 4]]    // 위줄    : 좌우 대칭 4개
+    [-4, [2, 6]],
+    [ 0, [0, 5]],
+    [ 4, [2, 6]]
 ];
 
 /* [Hidden] */
 // 상단 비드 반경. wall/2 = 완전한 반원 마감
 bead_r = wall / 2;
-// 하단 바깥 모서리 라운드 반경
 bot_r  = 1.2;
 $fn = 48;
 
@@ -122,12 +114,10 @@ module hexcut(w, h, t) {
 //  아래 모듈들은 "몸통 바닥 중심"이 원점인 좌표계 기준
 // -------------------------------------------------------------
 
-// 앞/뒤 벽 벌집
 module wall_mesh_fb() {
     up(mesh_z) xrot(90) hexcut(width - 2 * corner_r, mesh_h, depth + 2);
 }
 
-// 좌/우 벽 벌집 (손잡이 주변은 통짜로 남김)
 module wall_mesh_lr() {
     difference() {
         up(mesh_z) yrot(90) zrot(90) hexcut(depth - 2 * corner_r, mesh_h, width + 2);
@@ -135,7 +125,7 @@ module wall_mesh_lr() {
     }
 }
 
-// 바닥 벌집. 받침대가 놓이는 육각은 뚫지 않아 통짜 패드가 됨
+// 받침대가 놓이는 육각은 뚫지 않아 통짜 패드가 됨
 module floor_mesh() {
     up(floor_th / 2)
     intersection() {
@@ -144,7 +134,6 @@ module floor_mesh() {
     }
 }
 
-// 손잡이 주변 벌집 제외 영역
 // 손잡이 구멍을 handle_margin 만큼 부풀린 캡슐 하나뿐
 // -> 손잡이 좌/우/위쪽도 벌집이 그대로 뚫림
 module handle_keepout(grow) {
@@ -153,7 +142,7 @@ module handle_keepout(grow) {
         cyl(r = r, h = width + 8, orient = RIGHT);
 }
 
-// 손잡이 구멍. 벽 두께 구간에서 양쪽 면으로 벌어지는 필렛 -> 모서리 둥글게
+// 벽 두께 구간에서 양쪽 면으로 벌어지는 필렛 -> 모서리 둥글게
 module handle_cut() {
     prof_w = handle_w; prof_h = handle_h;
     up(hz) xcopies(spacing = width - wall, n = 2) zrot(90) xrot(90)
@@ -168,7 +157,6 @@ module handle_cut() {
     }
 }
 
-// 하단 바깥 모서리 라운드용 마스크 (이 부분을 깎아냄)
 module bottom_edge_mask() {
     difference() {
         linear_extrude(bot_r) offset(delta = 2) rect([width, depth], rounding = corner_r);
@@ -177,7 +165,6 @@ module bottom_edge_mask() {
     }
 }
 
-// 상단면 반원 비드 (벽 두께 전체를 감싸는 불노즈 마감)
 module top_bead() {
     up(height - bead_r)
         path_sweep(circle(r = bead_r, $fn = 20),
@@ -185,7 +172,7 @@ module top_bead() {
                    closed = true);
 }
 
-// 받침대. 채워진 육각 셀에 내접하는 원기둥, 아래로 갈수록 좁아져 오버행 없음
+// 채워진 육각 셀에 내접하는 원기둥, 아래로 갈수록 좁아져 오버행 없음
 module basket_feet() {
     for (p = foot_pts)
         move([p.x, p.y, 0])
