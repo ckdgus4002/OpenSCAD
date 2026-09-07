@@ -26,11 +26,11 @@ RENDER = [
   KEY("R", 7, 2),    // 오른손 space 2U, 저프로파일 + Choc v2
   KEY("L", 5, 1),    // 왼쪽   shift 2.25U
   KEY("R", 5, 6),    // 오른쪽 shift 2.25U, 듀얼 스템
+  KEY("L", 1, 2),    // F1
   KEY("L", 1, 5),    // F4
   KEY("R", 1, 1),    // F7
   KEY("R", 1, 2),    // F8
   KEY("R", 1, 3),    // F9
-  KEY("R", 1, 4),    // F10
   KEY("R", 1, 5),    // F11
   KEY("R", 1, 7),    // Eject
 ];
