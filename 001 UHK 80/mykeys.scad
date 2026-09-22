@@ -272,17 +272,17 @@ THUMB_TAPER_BACK  = 0.0;     // 뒤쪽 끝에서 안으로 들어오는 양 (mm)
 THUMB_2U_WIDTH = 2;
 
 // 캡 밑면(플레이트에 닿는 쪽) 치수
-function cap_bottom_unit(profile)      = (profile == 0) ? 18.16 : 18.05;
+function cap_bottom_unit(profile)      = (profile == -1) ? 18.16 : 18.05;
 function cap_bottom_x(profile, width)  = cap_bottom_unit(profile) + 19.05 * (width - 1);
 function cap_bottom_y(profile)         = cap_bottom_unit(profile);
 // 옆면이 위로 갈수록 안으로 좁아지는 각도. 한쪽당 $width_difference/2 만큼 좁아진다
-function cap_side_lean(profile, depth) = atan(((profile == 0) ? 2 : 5.8) / 2 / depth);
+function cap_side_lean(profile, depth) = atan(((profile == -1) ? 2 : 5.8) / 2 / depth);
 
 // side: -1 = 바깥이 왼쪽(왼손) / +1 = 바깥이 오른쪽(오른손)
 module thumb_taper_cut(width, side, profile, depth_trim = 0) {
   W = cap_bottom_x(profile, width);
   H = cap_bottom_y(profile);
-  D = ((profile == 0) ? LOW_PROFILE_DEPTH : OEM_ROW_DEPTH[profile]) - depth_trim;
+  D = ((profile == -1) ? LOW_PROFILE_DEPTH : OEM_ROW_DEPTH[profile]) - depth_trim;
 
   front = [side * (W / 2 - THUMB_TAPER_FRONT), -H / 2];   // 앞 모서리 위
   back  = [side * (W / 2 - THUMB_TAPER_BACK),   H / 2];   // 뒤 모서리 위
@@ -463,7 +463,7 @@ SHAPE_DEPTH_LOW_PROFILE = 0.45;   // 저프로파일. 상판이 얇아 이 이�
 SHAPE_DEPTH_STANDARD    = 1.00;   // 일반 높이. 상판 1.5mm 중 1.0 -> 아래 0.5mm 남는다
 
 module shape_at(position, profile) {
-  depth = (profile == 0) ? SHAPE_DEPTH_LOW_PROFILE : SHAPE_DEPTH_STANDARD;
+  depth = (profile == -1) ? SHAPE_DEPTH_LOW_PROFILE : SHAPE_DEPTH_STANDARD;
   top_of_key()
     translate([position[0], position[1], -depth])
       linear_extrude(depth + $dish_depth + 0.01)
@@ -498,11 +498,12 @@ module low_profile_settings(depth_trim = 0) {
 
 // (2) 일반 높이 OEM
 //   상판 1.5mm / 각인 1.0mm. 행별 높이는 KeyV2 oem.scad 원본 값 그대로다 (보정 없음).
-//   oem_row 는 위에서 아래로 0~4. 0 은 저프로파일 표식이라 숫자열은 5 를 쓴다.
+//   oem_row 는 위에서 아래로 0~4. 그 번호를 그대로 인덱스로 쓴다.
+//   저프로파일 표식은 -1 이라 0 이 비지 않는다.
 //   행 번호 근거와 이력은 SKILL.md 16 / 19
-OEM_ROW_DEPTH = [undef, 9.45, 9.00, 9.25, 9.25, 11.20];
-//               ^0     ^1    ^2    ^3    ^4    ^5(=원본 0행)
-//             (미사용) QWERTY 홈행  ZXCV  아랫줄  숫자열/F행
+OEM_ROW_DEPTH = [11.20, 9.45, 9.00, 9.25, 9.25];
+//               ^0     ^1    ^2    ^3    ^4
+//             숫자열/F행 QWERTY 홈행 ZXCV 아랫줄
 
 // ---------------------------------------------------------------
 // [OEM 캡 높이 - $stem_inset 과 OEM_HEIGHT_BIAS]
@@ -523,7 +524,7 @@ module standard_profile_settings(row, depth_trim = 0) {
 
 module profiled_base(profile, depth_trim = 0) {
   // g20_row 의 인자 3 은 형식상 값이다. low_profile_settings() 이 덮어써 결과가 같다
-  if (profile == 0) g20_row(3) low_profile_settings(depth_trim) children();
+  if (profile == -1) g20_row(3) low_profile_settings(depth_trim) children();
   else              oem_row(profile) standard_profile_settings(profile, depth_trim) children();
 }
 
@@ -566,9 +567,9 @@ module cap(key, base_profile) {
   // Choc v2 는 기둥을 원통으로 깎으므로, 깎기 전 사각 기둥이 원통보다 커야 한다.
   // 최종 바깥 치수는 CHOC2_BOSS_DIAMETER 가 정하니 이 값은 헐거움에 영향을 주지 않는다
   $stem_slop       = choc2 ? CHOC2_SLOP :
-                     (profile == 0) ? LOW_PROFILE_STEM_SLOP : STANDARD_STEM_SLOP;
+                     (profile == -1) ? LOW_PROFILE_STEM_SLOP : STANDARD_STEM_SLOP;
   $stem_inner_slop = !is_undef(inner_slop) ? inner_slop :
-                     (profile == 0) ? LOW_PROFILE_STEM_INNER_SLOP
+                     (profile == -1) ? LOW_PROFILE_STEM_INNER_SLOP
                                     : STANDARD_STEM_INNER_SLOP;
   $legends = [for (legend = top_legends)
     [legend[0], resolve_position(legend[1], width, legend[0], legend[2]), legend[2],
@@ -593,7 +594,7 @@ module cap(key, base_profile) {
 }
 
 // ---------------------------------------------------------------
-// 키 배열. 행 = [기본프로파일(0=저프로파일, 1~5=oem행), [키...]]
+// 키 배열. 행 = [기본프로파일(-1=저프로파일, 0~4=oem행), [키...]]
 // ---------------------------------------------------------------
 
 // 윗줄 F행은 저프로파일(LEFT_ROW_1 / RIGHT_ROW_1)과
@@ -610,9 +611,9 @@ FUNCTION_ROW_RIGHT = concat(function_row(["f7", "f8", "f9", "f10", "f11", "f12"]
                                                                      //   윗줄은 비움
 
 // -- 왼쪽 ------------------------------------------------------
-LEFT_ROW_1 = [0, FUNCTION_ROW_LEFT];
+LEFT_ROW_1 = [-1, FUNCTION_ROW_LEFT];
 
-LEFT_ROW_2 = [5, [ KEYCAP(1, SYMBOL("~", "`")),
+LEFT_ROW_2 = [0, [ KEYCAP(1, SYMBOL("~", "`")),
                    KEYCAP(1, SYMBOL("!", "1")),
                    KEYCAP(1, SYMBOL("@", "2")),
                    KEYCAP(1, SYMBOL("#", "3")),
@@ -656,9 +657,9 @@ LEFT_ROW_6 = [4, [ KEYCAP(1.25, WORD("fn", "wl"), shape = "globe"),
 //   2U 는 스템 3개 (스위치 + 스태빌 2), 사다리꼴. 1U 는 중앙 1개, 직사각형
 //   왼손 2U 는 바깥이 왼쪽이므로 taper = -1, 스템도 왼쪽으로 치우친다
 LEFT_ROW_7 = [4, [ KEYCAP(THUMB_2U_WIDTH, WORD("mod"), stems = THUMB_2U_STEMS_LEFT,
-                          profile = 0, choc2 = true, taper = -1),
+                          profile = -1, choc2 = true, taper = -1),
                    KEYCAP(1, ICON("␣", POS_CENTER, SIZE_SPACE),
-                          profile = 0, choc2 = true) ]];
+                          profile = -1, choc2 = true) ]];
 
 // 키 클러스터 모듈용 (1U x 3, Cherry 스위치, 일반 높이)
 LEFT_ROW_8 = [4, [ KEYCAP(1, WORD("mod")),
@@ -669,12 +670,12 @@ LEFT_ROW_8 = [4, [ KEYCAP(1, WORD("mod")),
 // 윗줄 일반 높이 한 벌 (왼쪽). 행 기본 profile 5 = 숫자열과 같은 OEM 최상단 행.
 //   F행은 숫자열 바로 위 단이라 실제 OEM 세트도 같은 캡을 쓴다.
 //   저프로파일 원본은 LEFT_ROW_1 에 그대로 있고, 이건 갈아 끼우기용 예비 세트다.
-LEFT_ROW_9 = [5, FUNCTION_ROW_LEFT];
+LEFT_ROW_9 = [0, FUNCTION_ROW_LEFT];
 
 // -- 오른쪽 ----------------------------------------------------
-RIGHT_ROW_1 = [0, FUNCTION_ROW_RIGHT];
+RIGHT_ROW_1 = [-1, FUNCTION_ROW_RIGHT];
 
-RIGHT_ROW_2 = [5, [ KEYCAP(1, SYMBOL("&", "7"), SIDE("nlk")),
+RIGHT_ROW_2 = [0, [ KEYCAP(1, SYMBOL("&", "7"), SIDE("nlk")),
                     KEYCAP(1, SYMBOL("*", "8"), SIDE("=")),
                     KEYCAP(1, SYMBOL("(", "9"), SIDE("/")),
                     KEYCAP(1, SYMBOL(")", "0"), SIDE("*")),
@@ -735,13 +736,13 @@ RIGHT_ROW_6 = [4, [ KEYCAP(1.5, ICON("␣", POS_CENTER, SIZE_SPACE)),
 //   2U 는 스템 3개 (스위치 + 스태빌 2), 사다리꼴. 1U 는 중앙 1개, 직사각형
 //   오른손 2U 는 바깥이 오른쪽이므로 taper = +1, 스템도 오른쪽으로 치우친다
 RIGHT_ROW_7 = [4, [ KEYCAP(1, ICON("␣", POS_CENTER, SIZE_SPACE),
-                           profile = 0, choc2 = true),
+                           profile = -1, choc2 = true),
                     KEYCAP(THUMB_2U_WIDTH, ICON("␣", POS_CENTER, SIZE_SPACE),
-                           stems = THUMB_2U_STEMS_RIGHT, profile = 0, choc2 = true,
+                           stems = THUMB_2U_STEMS_RIGHT, profile = -1, choc2 = true,
                            taper = 1) ]];
 
 // 윗줄 일반 높이 한 벌 (오른쪽). LEFT_ROW_9 와 한 세트
-RIGHT_ROW_8 = [5, FUNCTION_ROW_RIGHT];
+RIGHT_ROW_8 = [0, FUNCTION_ROW_RIGHT];
 
 LEFT_HALF  = [LEFT_ROW_1, LEFT_ROW_2, LEFT_ROW_3, LEFT_ROW_4, LEFT_ROW_5,
               LEFT_ROW_6, LEFT_ROW_7, LEFT_ROW_8, LEFT_ROW_9];
