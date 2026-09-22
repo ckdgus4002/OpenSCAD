@@ -105,7 +105,9 @@ module hexprism(t) { linear_extrude(t, center = true) hexagon(r = R, align_tip =
 
 module hexcut(w, h, t) {
     intersection() {
-        for (c = hex_centers(w, h)) move(c) hexprism(t);
+        // 격자 중심이 경계 바로 밖(R 이내)에 있어도 포함시켜 그 일부가 cuboid 안으로
+        // 들어오면 그만큼 뚫리게 함 -> 테두리에서 "반쪽 셀"이 통째로 막히는 것 방지
+        for (c = hex_centers(w + 2 * R, h + 2 * R)) move(c) hexprism(t);
         cuboid([w, h, t]);
     }
 }
@@ -115,12 +117,14 @@ module hexcut(w, h, t) {
 // -------------------------------------------------------------
 
 module wall_mesh_fb() {
-    up(mesh_z) xrot(90) hexcut(width - 2 * corner_r, mesh_h, depth + 2);
+    // 모서리 살(corner_r) 경계에서 육각이 반쪽만 걸치면 안 뚫리고 막히므로,
+    // 격자 한 칸(dxg)만큼 더 넓혀서 그 반쪽 셀까지 확실히 뚫리게 함
+    up(mesh_z) xrot(90) hexcut(width - 2 * corner_r + dxg, mesh_h, depth + 2);
 }
 
 module wall_mesh_lr() {
     difference() {
-        up(mesh_z) yrot(90) zrot(90) hexcut(depth - 2 * corner_r, mesh_h, width + 2);
+        up(mesh_z) yrot(90) zrot(90) hexcut(depth - 2 * corner_r + dxg, mesh_h, width + 2);
         if (handles) handle_keepout(handle_margin);
     }
 }

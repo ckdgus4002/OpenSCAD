@@ -2,7 +2,7 @@
 // 작업 규칙 / 값의 근거 / 건드리면 안 되는 값 / 실측해야 할 값은 전부
 // .claude/skills/uhk80-keycaps/SKILL.md 에 있다. 코드를 고치기 전에 먼저 읽을 것.
 // (아래 주석의 "SKILL.md N" 은 그 문서의 N 번 항목을 가리킨다)
-// 실행 전제: OpenSCAD 개발 스냅샷(2021.01 불가) / 이 파일은 KeyV2 폴더 안에 /
+// 실행 전제: OpenSCAD 개발 스냅샷(2021.01 불가) / 같은 폴더에 KeyV2 폴더 /
 //            BOSL2 설치 / 같은 폴더에 DejaVuSansMono-Bold.ttf   (SKILL.md 1)
 
 include <./KeyV2/includes.scad>
@@ -17,27 +17,18 @@ use <./DejaVuSansMono-Bold.ttf>   // 동봉 폰트. 같은 폴더에 파일이 �
 
 function KEY(hand, row, col) = [hand, row, col];
 
-// 뽑을 키 목록 (한 줄에 하나). -1 = 그 축 전부
+// 뽑을 키 목록 (한 줄에 하나)
 RENDER = [
-  KEY("L", -1, 1),
-  KEY("R", -1, 6),
-  KEY(-1, 7, -1),
+  KEY("L", -1, -1),
+//  KEY("R", -1, -1),
 ];
-// 다른 예
-//   KEY("L", 4, 5)     왼쪽 4행 5열 한 개
-//   KEY("R", 4, -1)    오른쪽 4행 전체
-//   KEY("L", -1, -1)   왼쪽 키보드 전부
-//   KEY(-1, -1, 3)     반 구분 없이 양쪽 3열 전체
-//   KEY(-1, 3, -1)     반 구분 없이 양쪽 3행 전체
-//   KEY(-1, -1, -1)    전부
 
+// [프린트 베드] 가로 폭만 쓴다. 세로는 넘치면 그냥 줄이 늘어날 뿐이라 안 본다
+BED_WIDTH = 190;
 
-// [프린트 베드] 자기 프린터 크기로 바꿀 것. pack 배치가 여기에 맞춰 잡힌다
-BED = [160, 300];
-
-PACK_WIDTH   = BED[0] - 3;   // 배치 최대 가로 폭. 줄이면 좁고 길게, 늘리면 넓고 짧게
-PACK_GAP_X   = 2.0;          // 키 사이 좌우 간격. FDM 에서 안 붙게 하는 여유
-PACK_PITCH_Y = 21.0;         // 줄 간격 = 키 세로(약 18) + 앞뒤 여유
+PACK_WIDTH   = BED_WIDTH - 3;   // 줄이면 좁고 길게, 늘리면 넓고 짧게
+PACK_GAP_X   = 2.0;             // FDM 에서 안 붙게 하는 여유
+PACK_PITCH_Y = 21.0;            // 줄 간격 = 키 세로(약 18) + 앞뒤 여유
 
 // 스템 서포트: "tines" | "disable"
 STEM_SUPPORT = "disable";
@@ -47,12 +38,12 @@ STEM_SUPPORT = "disable";
 // ---------------------------------------------------------------
 //   KeyV2 의 keybump() 는 쓰지 않고 아래 homing_bar() 로 직접 그린다.
 //   그 이유와 HOMING_EDGE_INSET 의 근거는 SKILL.md 15
-HOMING_LENGTH     = 6.0;   // 바 길이(mm). 좌우 방향
-HOMING_WIDTH      = 1.0;   // 바 폭(mm). 앞뒤 방향
+HOMING_LENGTH     = 6.0;   // 좌우 방향(mm)
+HOMING_WIDTH      = 1.0;   // 앞뒤 방향(mm)
 HOMING_HEIGHT     = 0.4;   // 상판에서 실제로 솟는 높이(mm)
 HOMING_EDGE_INSET = 1.2;   // 상판 앞 모서리에서 바 중심까지의 거리(mm)
 
-// 호밍 바 본체. profiled_base() 안에서 불러야 프로파일 값이 잡힌다
+// profiled_base() 안에서 불러야 프로파일 값이 잡힌다
 module homing_bar() {
   top_of_key()
     difference() {
@@ -99,12 +90,12 @@ STANDARD_STEM_INNER_SLOP    = 0.05;   // 안쪽 십자를 좁힌다
 // ---------------------------------------------------------------
 //   십자 구멍은 MX 와 규격이 같아 건드리지 않고, 바깥 사각 기둥만 원통으로 깎는다.
 //   지름 / 45도 형상 / 음수 slop 의 근거는 SKILL.md 8
-CHOC2_BOSS_DIAMETER = 5.45;   // 원통 기둥 지름(mm). 방진벽 안지름 5.8 기준
+CHOC2_BOSS_DIAMETER = 5.45;   // 방진벽 안지름 5.8 기준
 CHOC2_BAND_HEIGHT   = 2.2;    // 여기까지가 직선 원통 구간(mm)
 CHOC2_BOSS_HEIGHT   = 3.2;    // 다듬는 전체 높이. 저프로파일의 $stem_throw 와 같게 둔다
 CHOC2_SLOP          = -0.15;  // 깎기 전 사각 기둥의 여유. 음수 = 기둥을 키운다
 CHOC2_FACETS        = 48;
-CHOC2_TRIM_BOX      = 12;     // 깎기용 상자 한 변(mm). 1U 안쪽 공간 안에 들어간다
+CHOC2_TRIM_BOX      = 12;     // 깎기용 상자 한 변(mm)
 
 if (CHOC2_BOSS_DIAMETER > 5.5 - CHOC2_SLOP * 2)
   echo(str("경고: CHOC2_BOSS_DIAMETER(", CHOC2_BOSS_DIAMETER, ") 가 깎기 전 기둥 세로(",
@@ -140,8 +131,8 @@ $stabilizer_type = "disable";   // 2U 이상 자동 스태빌 스템 차단.
                                 //   엄지 2U / 시프트 스태빌은 아래 상수로 직접 준다
 
 FONT_ENGLISH = "DejaVu Sans Mono:style=Bold";   // 위 use<> 로 동봉된 폰트
-// Book 은 세로획이 0.099em(3.2 기준 0.32mm)이라 0.4 노즐 압출폭 0.42mm 보다 얇아 홈이 뭉갠다.
-// Bold 는 0.144em = 0.46mm 라 0.4 노즐로도 홈이 잡힌다
+// SIZE_LATIN 3.2 기준 세로획이 Book 0.44mm / Bold 0.64mm (렌더 실측).
+// 0.4 노즐 압출폭 0.42mm 로 Book 은 한 줄에 겨우 걸치고, Bold 는 1.5 줄이라 홈이 뚜렷하다
 FONT_HANGUL  = "Apple SD Gothic Neo:style=Bold";
 // 한글이 비어 보이면 Help > Font List 에서 이름 확인 후 FONT_HANGUL 교체
 
@@ -150,7 +141,7 @@ SIZE_WORD             = 3.2;
 SIZE_LATIN            = 3.2;
 SIZE_HANGUL           = 2.8;
 SIZE_SYMBOL           = 3.0;   // 숫자열처럼 위/아래 두 벌
-SIZE_ICON             = 3.2;   // ctrl / opt / cmd (모서리)
+SIZE_ICON             = 3.2;   // ctrl / opt / cmd / fn (모서리)
 SIZE_BACKSPACE_DELETE = 4.0;
 SIZE_SPACE            = 4.2;
 SIZE_ARROW            = 2.8;
@@ -223,12 +214,12 @@ LEFT_SHIFT_STEMS      = [[-LEFT_SHIFT_STAB_PITCH, 0], [0, 0], [LEFT_SHIFT_STAB_P
 THUMB_STAB_PITCH = 11.9;   // 캡 중심 -> 스태빌 스템 중심 (mm)
 
 // ---------------------------------------------------------------
-// [엄지 2U 스템 무리의 좌우 치우침]  [중요] 실측해서 확정할 값
+// [엄지 2U 스템 무리의 좌우 치우침]
 // ---------------------------------------------------------------
 //   순정은 캡 중심과 스위치 중심이 어긋나 있어 스템 3개를 통째로 옮긴다.
-//   양수 = 스템을 바깥쪽(케이스 모서리 쪽)으로 민다. 재는 법은 SKILL.md 4
-//   [실측 미확정] 지금 값은 사진에서 읽은 임시값이다
-THUMB_2U_STEM_SHIFT = 1.0;
+//   양수 = 사다리꼴 쪽으로, 음수 = 곧은 변 쪽으로 민다.
+//   순정 캡 밑면 실측(곧은 변 안쪽 벽 -> 가까운 스템 1.1mm)에서 계산한 값이다. 계산은 SKILL.md 11
+THUMB_2U_STEM_SHIFT = -1.25;
 
 // outer: -1 = 왼손(바깥이 왼쪽) / +1 = 오른손(바깥이 오른쪽)
 function thumb_2u_stems(outer) =
@@ -248,15 +239,14 @@ if (THUMB_STAB_PITCH < (CHOC2_TRIM_BOX + CHOC2_BOSS_DIAMETER) / 2)
 // ---------------------------------------------------------------
 //   순정 엄지 2U 는 4각형 사다리꼴이다. 바깥 옆면 하나가 앞뒤 전체에 걸쳐 눕는다.
 //   직사각형이나 모서리만 자른 모양으로는 케이스에 안 들어간다.
-//   순정 캡 위에 디지털 각도자를 얹어, 앞모서리와 바깥 옆면이 이루는 내각이 111.4도다. 90 을 넘는 21.4도가 곧 바깥 옆면이 눕는 각이다.
-//   조정법은 SKILL.md 12
-THUMB_TAPER_ANGLE = 111.4;   // 앞모서리 기준 내각 (도) - 실측값. 여기만 고치면 된다
-// 밑면 깊이 x tan(각 - 90) = 18.16 x tan(21.4) = 7.12 mm
-THUMB_TAPER_FRONT = cap_bottom_y(0) * tan(THUMB_TAPER_ANGLE - 90);   // 앞쪽 끝에서 안으로 들어오는 양 (mm)
-THUMB_TAPER_BACK  = 0.0;     // 뒤쪽 끝에서 안으로 들어오는 양 (mm)
+//   순정 왼손 엄지 2U 밑면 실측. 오른손은 좌우 대칭이라 같은 값을 쓴다. 조정법은 SKILL.md 12
+THUMB_2U_BACK_LENGTH  = 36.8;   // 윗변(뒤, 가장 긴 변)
+THUMB_2U_FRONT_LENGTH = 31.0;   // 아랫변(앞)
+THUMB_TAPER_FRONT = THUMB_2U_BACK_LENGTH - THUMB_2U_FRONT_LENGTH;   // 앞쪽 끝에서 안으로 들어오는 양 (mm)
+THUMB_TAPER_BACK  = 0.0;        // 뒤쪽 끝에서 안으로 들어오는 양 (mm)
 
-// 엄지 2U 폭(U). 사다리꼴로도 안 들어가면 여기를 1.9 등으로 줄여 캡을 짧게 만든다
-THUMB_2U_WIDTH = 2;
+// 밑면 길이가 윗변 실측과 같아지도록 역산한다
+THUMB_2U_WIDTH = 1 + (THUMB_2U_BACK_LENGTH - cap_bottom_unit(-1)) / 19.05;
 
 // 캡 밑면(플레이트에 닿는 쪽) 치수
 function cap_bottom_unit(profile)      = (profile == -1) ? 18.16 : 18.05;
@@ -295,8 +285,8 @@ module thumb_taper_cut(width, side, profile) {
 //   [중요] 선폭/간격은 전부 0.4mm 이상. 남는 살이 노즐폭 미만이면 슬라이서가 통째로 건너뛴다.
 //   BOSL2 도형 표기와 나머지 규칙은 SKILL.md 14
 
-// -- fn 지구본 --------------------------------------------------
-GLOBE_RADIUS    = 1.6;   // cmd 아이콘과 비슷한 크기
+// -- f24 지구본 -------------------------------------------------
+GLOBE_RADIUS    = 1.6;   // 지름 3.2 = SIZE_ICON
 GLOBE_THICKNESS = 0.5;   // 외곽 선폭
 
 module globe2d() {
@@ -315,23 +305,24 @@ module globe2d() {
   }
 }
 
-// fn 키(1.25U) 우상단 모서리. POS_ICON_TOP_RIGHT 과 같은 위치 규칙
+// f24 키 좌하단 모서리. 맥북 fn/Globe 키와 같은 자리.
+// ctrl/opt/cmd 의 POS_ICON_TOP_RIGHT [1.05, -0.88] 을 좌하단으로 뒤집은 값이다
 // (도형 좌표계는 각인 좌표계와 y 부호가 반대다)
-GLOBE_POSITION = [top_width(1.25) / 3.5 * 1.05, TOP_HEIGHT / 3.5 * 0.88];
+GLOBE_POSITION = [-top_width(1.25) / 3.5 * 1.05, -TOP_HEIGHT / 3.5 * 0.88];
 
 // -- 보조메뉴(우클릭) -------------------------------------------
 //   문서(가로줄 3개) + 오른쪽 아래 마우스 커서
-MENU_WIDTH          = 3.7;    // 문서 가로
-MENU_HEIGHT         = 4.3;    // 문서 세로
+MENU_WIDTH          = 3.7;
+MENU_HEIGHT         = 4.3;
 MENU_THICKNESS      = 0.50;   // 문서 외곽 선폭
-MENU_RADIUS         = 0.4;    // 문서 모서리 라운드
-MENU_LINE_COUNT     = 3;      // 문서 안쪽 가로줄
-MENU_LINE_WIDTH     = 1.6;    // 가로줄 길이 (좌우 안쪽 여백 0.55씩)
+MENU_RADIUS         = 0.4;
+MENU_LINE_COUNT     = 3;
+MENU_LINE_WIDTH     = 1.6;    // 좌우 안쪽 여백 0.55씩
 MENU_LINE_THICKNESS = 0.50;
-MENU_LINE_PITCH     = 1.0;    // 가로줄 피치 (줄 사이 남는 살 0.5)
+MENU_LINE_PITCH     = 1.0;    // 줄 사이 남는 살 0.5
 MENU_CURSOR_SCALE   = 1.6;    // 커서 배율. 줄이면 꼬리(약 0.49mm)가 사라진다
 MENU_CURSOR_X       = 1.45;   // 커서 끝점 x. 문서 오른쪽 테두리에 물려 얇은 살을 없앤다
-MENU_CURSOR_Y       = -0.9;   // 커서 끝점 y
+MENU_CURSOR_Y       = -0.9;
 
 // 마우스 커서 윤곽 (끝점 = 원점, 아래로 뻗음)
 MENU_CURSOR = [[0,0], [0,-1.05], [0.26,-0.80], [0.46,-1.22],
@@ -409,7 +400,7 @@ module play_pause2d() {               // f8 재생/일시정지
   for (dx = [0.375, 1.325]) right(dx) rect([0.5, 1.9]);
 }
 
-module speaker2d() {                  // 스피커 본체
+module speaker2d() {
   polygon([[-0.90,-0.42], [-0.28,-0.42], [0.42,-1.25],
            [ 0.42, 1.25], [-0.28, 0.42], [-0.90, 0.42]]);
 }
@@ -499,7 +490,7 @@ OEM_ROW_DEPTH = [11.12, 9.24, 8.52, 8.82, 9.82];
 
 // 행별 기울기(도). 앞이 들리는 쪽이 +.
 //   oem_row() 가 주는 KeyV2 값(-3 / +1 / +6 / +9 / +10)을 standard_profile_settings() 에서 덮어쓴다.
-//   순정 캡의 앞모서리-뒤모서리 차이를 재서 역산한 값이다 (SKILL.md 16 실측표).
+//   순정 캡의 앞모서리-뒤모서리 차이를 재서 역산한 값이다 (실측값은 SKILL.md 19).
 //   1도당 앞뒤 차이 약 0.205mm. 이 값과 OEM_ROW_DEPTH 는 같이 움직인다 -
 //   기울기를 바꾸면 앞모서리 높이도 따라 바뀌므로 depth 를 다시 맞춰야 한다
 OEM_ROW_TILT = [-2.65, 1.50, 4.50, 9.87, 18.08];
@@ -527,13 +518,13 @@ module profiled_base(profile) {
 }
 
 module key_body(profile, width) {
-  // $stem_inset 은 스템뿐 아니라 캡 바닥면도 같이 올린다 (key.scad 의 envelope).
-  // 물림은 $stem_inner_slop 으로 잡는다 (SKILL.md 16)
+  // $stem_inset 은 스템뿐 아니라 캡 바닥면도 같이 올린다 (key.scad 의 envelope, SKILL.md 16).
+  // 물림은 $stem_inner_slop 으로 잡는다 (SKILL.md 7)
   profiled_base(profile) u(width) cherry() key();
 }
 
 // ---------------------------------------------------------------
-// 키 한 벌 = KEYCAP(...). 이름 있는 인자라 안 쓰는 인자는 생략한다.
+// 키 하나 = KEYCAP(...). 이름 있는 인자라 안 쓰는 인자는 생략한다.
 //   인자별 설명은 SKILL.md 17
 // ---------------------------------------------------------------
 function KEYCAP(width = 1, top = [], side = [], stems = undef, shape = undef,
@@ -579,9 +570,9 @@ module cap(key, base_profile) {
     difference() {
       key_body(profile, width);
       if (!is_undef(shape)) profiled_base(profile) u(width) shape_cut(shape, profile);
-      if (choc2)            choc2_trim(stems);
-      // 사다리꼴 옆면은 캡을 다 만든 뒤 바깥에서 잘라낸다.
-      // 바깥 스템(y = 0 축 위)은 잘리는 영역 밖이다
+      // 캡 안쪽 빈 공간 안에서만 깎는다. 2U 바깥 스템은 옆벽과 가까워 상자가 벽까지 먹는다
+      if (choc2) intersection() { profiled_base(profile) u(width) inner_shape(); choc2_trim(stems); }
+      // 사다리꼴 옆면은 캡을 다 만든 뒤 바깥에서 잘라낸다
       if (taper != 0)       thumb_taper_cut(width, taper, profile);
     }
     // 호밍 바는 잘라내기가 끝난 뒤에 얹는다
@@ -593,22 +584,26 @@ module cap(key, base_profile) {
 // 키 배열. 행 = [기본프로파일(-1=저프로파일, 0~4=oem행), [키...]]
 // ---------------------------------------------------------------
 
-// 윗줄 F행. 메인(LEFT_ROW_1 / RIGHT_ROW_1, low = true)과 일반 높이 예비
-// (LEFT_ROW_9 / RIGHT_ROW_8, low = false)가 같은 키 목록을 쓴다.
+// 윗줄 F행. 메인(LEFT_ROW_1 / RIGHT_ROW_1, low = true)과 예비
+// (LEFT_ROW_8 / RIGHT_ROW_8, low = false)를 같은 함수로 만든다.
 // 저프로파일은 메인의 FUNCTION_ROW_LOW 키뿐이고 나머지는 일반 높이다 (SKILL.md 2)
 FUNCTION_ROW_LOW = ["f1", "f4", "f11", "eject"];
 
-function function_profile(name, low) =
-  (low && len([for (n = FUNCTION_ROW_LOW) if (n == name) 1]) > 0) ? -1 : undef;
+function is_low_key(name) = len([for (n = FUNCTION_ROW_LOW) if (n == name) 1]) > 0;
 
+function function_profile(name, low) = (low && is_low_key(name)) ? -1 : undef;
+
+// 예비 벌(low = false)은 메인이 저프로파일인 키만 담는다. 나머지는 메인이 이미
+// 일반 높이라 같은 캡이 두 개 나오기 때문이다. 자리는 GAP 으로 비워 열 번호를 맞춘다
 // sides = 앞에서부터 키마다 측면(Mod) 각인. 모자라면 나머지 키는 측면 없음
 function function_row(names, low, sides = []) =
   [for (i = idx(names))
+     (!low && !is_low_key(names[i])) ? GAP(1) :
      KEYCAP(1, WORD(names[i], POS_BOTTOM), i < len(sides) ? sides[i] : [],
             shape = names[i], profile = function_profile(names[i], low))];
 
 function function_row_left(low) =
-  concat([KEYCAP(1, WORD("esc"))],
+  concat([low ? KEYCAP(1, WORD("esc")) : GAP(1)],
          function_row(["f1", "f2", "f3", "f4", "f5", "f6"], low));
 
 function function_row_right(low) =
@@ -616,7 +611,7 @@ function function_row_right(low) =
                       [SIDE("nlk"), SIDE("="), SIDE("/"), SIDE("*")]),
          [KEYCAP(1.5, WORD("eject"), profile = function_profile("eject", low)),
           GAP(1),
-          KEYCAP(1, WORD("f13", POS_BOTTOM))]);   // 특수기능이 없어 윗줄은 비움
+          low ? KEYCAP(1, WORD("f13", POS_BOTTOM)) : GAP(1)]);   // f13 은 특수기능이 없어 아이콘 없이 번호만
 
 // -- 왼쪽 ------------------------------------------------------
 LEFT_ROW_1 = [0, function_row_left(true)];
@@ -651,7 +646,7 @@ LEFT_ROW_5 = [3, [ KEYCAP(2.25, WORD("shift", "wl"), stems = LEFT_SHIFT_STEMS),
                    KEYCAP(1, ALPHA("V", "ㅍ")),
                    KEYCAP(1, ALPHA("B", "ㅠ")) ]];
 
-LEFT_ROW_6 = [4, [ KEYCAP(1.25, WORD("f24", "wl")),
+LEFT_ROW_6 = [4, [ KEYCAP(1.25, ICON("fn", POS_ICON_TOP_RIGHT), shape = "globe"),
                    KEYCAP(1.25, concat(ICON("⌃", POS_ICON_TOP_RIGHT),
                                        WORD("ctrl", "wl"))),
                    KEYCAP(1.25, concat(ICON("⌥", POS_ICON_TOP_RIGHT),
@@ -660,24 +655,18 @@ LEFT_ROW_6 = [4, [ KEYCAP(1.25, WORD("f24", "wl")),
                    KEYCAP(1.5, concat(ICON("⌘", POS_ICON_TOP_RIGHT),
                                       WORD("command", "wl"))) ]];
 
-// 엄지열 - 저프로파일. 행 기본값 4 를 무시하도록 키마다 profile 오버라이드 0
+// 엄지열 - 저프로파일. 행 기본값 4 를 무시하도록 키마다 profile = -1 로 덮어쓴다
 //   2U 는 스템 3개 (스위치 + 스태빌 2), 사다리꼴. 1U 는 중앙 1개, 직사각형
-//   왼손 2U 는 바깥이 왼쪽이므로 taper = -1, 스템도 왼쪽으로 치우친다
-LEFT_ROW_7 = [4, [ KEYCAP(THUMB_2U_WIDTH, WORD("mod"), stems = THUMB_2U_STEMS_LEFT,
+//   왼손 2U 는 사다리꼴이 왼쪽이라 taper = -1. 스템은 곧은 변(오른쪽)으로 치우친다
+LEFT_ROW_7 = [4, [ KEYCAP(THUMB_2U_WIDTH, WORD("numpad"), stems = THUMB_2U_STEMS_LEFT,
                           profile = -1, choc2 = true, taper = -1),
                    KEYCAP(1, ICON("␣", POS_CENTER, SIZE_SPACE),
                           profile = -1, choc2 = true) ]];
 
-// 키 클러스터 모듈용 (1U x 3, Cherry 스위치, 일반 높이)
-LEFT_ROW_8 = [4, [ KEYCAP(1, WORD("mod")),
-                   KEYCAP(1, concat(ICON("⌘", POS_ICON_TOP_RIGHT),
-                                    WORD("cmd", POS_BOTTOM))),
-                   KEYCAP(1, ICON("␣", POS_CENTER, SIZE_SPACE)) ]];
-
-// 윗줄 일반 높이 한 벌 (왼쪽). 행 기본 profile 0 = 숫자열과 같은 OEM 최상단 행.
+// 윗줄 예비 (왼쪽). 메인에서 저프로파일인 f1 / f4 의 일반 높이 캡만 담는다.
+//   행 기본 profile 0 = 숫자열과 같은 OEM 최상단 행.
 //   F행은 숫자열 바로 위 단이라 실제 OEM 세트도 같은 캡을 쓴다.
-//   메인(LEFT_ROW_1)과 달리 f1 / f4 도 일반 높이인 갈아 끼우기용 예비 세트다.
-LEFT_ROW_9 = [0, function_row_left(false)];
+LEFT_ROW_8 = [0, function_row_left(false)];
 
 // -- 오른쪽 ----------------------------------------------------
 RIGHT_ROW_1 = [0, function_row_right(true)];
@@ -737,27 +726,27 @@ RIGHT_ROW_6 = [4, [ KEYCAP(1.5, ICON("␣", POS_CENTER, SIZE_SPACE)),
                     KEYCAP(1, ICON("▼", POS_CENTER, SIZE_ARROW)),
                     KEYCAP(1, ICON("▶", POS_CENTER, SIZE_ARROW)) ]];
 
-// 엄지열 - 저프로파일 (profile 오버라이드 0)
+// 엄지열 - 저프로파일
 //   2U 는 스템 3개 (스위치 + 스태빌 2), 사다리꼴. 1U 는 중앙 1개, 직사각형
-//   오른손 2U 는 바깥이 오른쪽이므로 taper = +1, 스템도 오른쪽으로 치우친다
+//   오른손 2U 는 사다리꼴이 오른쪽이라 taper = +1. 스템은 곧은 변(왼쪽)으로 치우친다
 RIGHT_ROW_7 = [4, [ KEYCAP(1, ICON("␣", POS_CENTER, SIZE_SPACE),
                            profile = -1, choc2 = true),
                     KEYCAP(THUMB_2U_WIDTH, ICON("␣", POS_CENTER, SIZE_SPACE),
                            stems = THUMB_2U_STEMS_RIGHT, profile = -1, choc2 = true,
                            taper = 1) ]];
 
-// 윗줄 일반 높이 한 벌 (오른쪽). LEFT_ROW_9 와 한 세트
+// 윗줄 예비 (오른쪽). f11 / eject 의 일반 높이 캡만. LEFT_ROW_8 과 한 세트
 RIGHT_ROW_8 = [0, function_row_right(false)];
 
 LEFT_HALF  = [LEFT_ROW_1, LEFT_ROW_2, LEFT_ROW_3, LEFT_ROW_4, LEFT_ROW_5,
-              LEFT_ROW_6, LEFT_ROW_7, LEFT_ROW_8, LEFT_ROW_9];
+              LEFT_ROW_6, LEFT_ROW_7, LEFT_ROW_8];
 RIGHT_HALF = [RIGHT_ROW_1, RIGHT_ROW_2, RIGHT_ROW_3, RIGHT_ROW_4,
               RIGHT_ROW_5, RIGHT_ROW_6, RIGHT_ROW_7, RIGHT_ROW_8];
 
 // ---------------------------------------------------------------
 // 배치 / 생성
 // ---------------------------------------------------------------
-// RENDER 로 키를 걸러낸다. 형식은 위 [렌더 선택] 참조
+// 형식은 위 [렌더 선택] 참조
 // 축 하나가 맞는지. -1 / 0 / 생략 은 '그 축 전부'. 반(문자열)에도 같이 쓴다
 function axis_match(want, got) =
   is_undef(want) || want == -1 || want == 0 || want == got;
@@ -771,14 +760,12 @@ function selected(hand, r, i) =
 // ---------------------------------------------------------------
 // pack 배치 - 고른 키를 원점부터 촘촘히 다시 깐다 (프린트용)
 //   키보드 모양을 버리고 왼쪽부터 채우다 PACK_WIDTH 를 넘으면 다음 줄로 내린다.
-//   대상은 RENDER 가 고른 키다
 // ---------------------------------------------------------------
 
 // 키 바닥 footprint 폭(mm). 1U=18.05, 그 뒤로 1U(19.05)씩. 저/일반 공통
 function footprint_width(width) = 19.05 * width - 1.0;
 
-// 뽑을 키를 한 줄 리스트로 [키데이터, 행기본프로파일].
-// GAP(스위치 없는 자리)과 RENDER 가 안 고른 키는 제외한다
+// 뽑을 키를 한 줄 리스트로 [키데이터, 행기본프로파일]
 function half_keys(hand, rows) =
   [ for (r = idx(rows))
       for (i = idx(rows[r][1]))
@@ -789,7 +776,7 @@ ALL_KEYS = concat(half_keys("L", LEFT_HALF), half_keys("R", RIGHT_HALF));
 
 FOOTPRINT_WIDTHS = [for (entry = ALL_KEYS) footprint_width(cap_width(entry[0]))];
 
-// 왼쪽부터 채우다 PACK_WIDTH 넘으면 다음 줄. 각 키 중심좌표 리스트 반환
+// 각 키 중심좌표 리스트를 돌려준다
 function pack_positions(i, cursor_x, row) =
   i >= len(FOOTPRINT_WIDTHS) ? [] :
   let (x      = cursor_x + FOOTPRINT_WIDTHS[i] / 2,
@@ -818,6 +805,6 @@ module pack() {
 // ---------------------------------------------------------------
 echo(str("키 ", len(ALL_KEYS), "개 / pack 배치 약 ",
          round(PACK_SIZE_X), " x ", round(PACK_SIZE_Y),
-         " mm / 베드 ", BED[0], " x ", BED[1], " mm"));
+         " mm / 베드 폭 ", BED_WIDTH, " mm"));
 
 pack();
