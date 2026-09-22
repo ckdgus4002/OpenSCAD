@@ -1,42 +1,36 @@
 // UHK80 키캡 세트 - OpenSCAD / KeyV2 + BOSL2
-//
 // 작업 규칙 / 값의 근거 / 건드리면 안 되는 값 / 실측해야 할 값은 전부
 // .claude/skills/uhk80-keycaps/SKILL.md 에 있다. 코드를 고치기 전에 먼저 읽을 것.
 // (아래 주석의 "SKILL.md N" 은 그 문서의 N 번 항목을 가리킨다)
-//
 // 실행 전제: OpenSCAD 개발 스냅샷(2021.01 불가) / 이 파일은 KeyV2 폴더 안에 /
-//            BOSL2 설치 / 같은 폴더에 DejaVuSansMono.ttf        (SKILL.md 1)
+//            BOSL2 설치 / 같은 폴더에 DejaVuSansMono-Bold.ttf   (SKILL.md 1)
 
 include <./KeyV2/includes.scad>
 include <BOSL2/std.scad>     // 반드시 KeyV2 뒤에 include 할 것.
-use <./DejaVuSansMono.ttf>   // 동봉 폰트. 같은 폴더에 파일이 있어야 한다
+use <./DejaVuSansMono-Bold.ttf>   // 동봉 폰트. 같은 폴더에 파일이 있어야 한다
 
 // ---------------------------------------------------------------
 // 렌더 선택
 // ---------------------------------------------------------------
-//   "pack" | "all" | [행, 열] | [KEY(반,행,열), ...]   - 형식과 규칙은 SKILL.md 5
+//   형식은 KEY 목록 하나뿐이다. 규칙은 SKILL.md 5
+//   세 축(반/행/열) 모두 -1 을 넣으면 '그 축 전부' 다
 
 function KEY(hand, row, col) = [hand, row, col];
 
-// 뽑을 키 목록 (한 줄에 키 하나)
+// 뽑을 키 목록 (한 줄에 하나). -1 = 그 축 전부
 RENDER = [
-  KEY("L", 4, 5),    // F            호밍
-  KEY("R", 4, 2),    // J            호밍
-  KEY("L", 7, 1),    // 왼손   mod   2U, 저프로파일 + Choc v2
-  KEY("R", 7, 2),    // 오른손 space 2U, 저프로파일 + Choc v2
-  KEY("L", 5, 1),    // 왼쪽   shift 2.25U
-  KEY("R", 5, 6),    // 오른쪽 shift 2.25U, 듀얼 스템
-  KEY("L", 1, 2),    // F1
-  KEY("L", 1, 5),    // F4
-  KEY("R", 1, 1),    // F7
-  KEY("R", 1, 2),    // F8
-  KEY("R", 1, 3),    // F9
-  KEY("R", 1, 5),    // F11
-  KEY("R", 1, 7),    // Eject
+  KEY("L", -1, 1),
+  KEY("R", -1, 6),
+  KEY(-1, 7, -1),
 ];
+// 다른 예
+//   KEY("L", 4, 5)     왼쪽 4행 5열 한 개
+//   KEY("R", 4, -1)    오른쪽 4행 전체
+//   KEY("L", -1, -1)   왼쪽 키보드 전부
+//   KEY(-1, -1, 3)     반 구분 없이 양쪽 3열 전체
+//   KEY(-1, 3, -1)     반 구분 없이 양쪽 3행 전체
+//   KEY(-1, -1, -1)    전부
 
-// KEY 목록으로 골랐을 때의 배치. true = pack 재배치 / false = 키보드 자리 그대로
-PACK_SELECTED = true;
 
 // [프린트 베드] 자기 프린터 크기로 바꿀 것. pack 배치가 여기에 맞춰 잡힌다
 BED = [160, 300];
@@ -145,7 +139,9 @@ module choc2_trim(stems) {
 $stabilizer_type = "disable";   // 2U 이상 자동 스태빌 스템 차단.
                                 //   엄지 2U / 시프트 스태빌은 아래 상수로 직접 준다
 
-FONT_ENGLISH = "DejaVu Sans Mono:style=Book";   // 위 use<> 로 동봉된 폰트
+FONT_ENGLISH = "DejaVu Sans Mono:style=Bold";   // 위 use<> 로 동봉된 폰트
+// Book 은 세로획이 0.099em(3.2 기준 0.32mm)이라 0.4 노즐 압출폭 0.42mm 보다 얇아 홈이 뭉갠다.
+// Bold 는 0.144em = 0.46mm 라 0.4 노즐로도 홈이 잡힌다
 FONT_HANGUL  = "Apple SD Gothic Neo:style=Bold";
 // 한글이 비어 보이면 Help > Font List 에서 이름 확인 후 FONT_HANGUL 교체
 
@@ -252,8 +248,7 @@ if (THUMB_STAB_PITCH < (CHOC2_TRIM_BOX + CHOC2_BOSS_DIAMETER) / 2)
 // ---------------------------------------------------------------
 //   순정 엄지 2U 는 4각형 사다리꼴이다. 바깥 옆면 하나가 앞뒤 전체에 걸쳐 눕는다.
 //   직사각형이나 모서리만 자른 모양으로는 케이스에 안 들어간다.
-//   [실측 2026-09-05] 순정 캡 위에 디지털 각도자를 얹어, 앞모서리와 바깥 옆면이
-//   이루는 내각을 111.4도로 쟀다. 90 을 넘는 21.4도가 곧 바깥 옆면이 눕는 각이다.
+//   순정 캡 위에 디지털 각도자를 얹어, 앞모서리와 바깥 옆면이 이루는 내각이 111.4도다. 90 을 넘는 21.4도가 곧 바깥 옆면이 눕는 각이다.
 //   조정법은 SKILL.md 12
 THUMB_TAPER_ANGLE = 111.4;   // 앞모서리 기준 내각 (도) - 실측값. 여기만 고치면 된다
 // 밑면 깊이 x tan(각 - 90) = 18.16 x tan(21.4) = 7.12 mm
@@ -497,7 +492,7 @@ module low_profile_settings() {
 //   넣을 값 = 순정 앞모서리 실측 − 그 행의 보정치 (SKILL.md 16)
 //   oem_row 는 위에서 아래로 0~4. 그 번호를 그대로 인덱스로 쓴다.
 //   저프로파일 표식은 -1 이라 0 이 비지 않는다.
-//   행 번호 근거와 이력은 SKILL.md 16 / 19
+//   행 번호 근거는 SKILL.md 16
 OEM_ROW_DEPTH = [11.12, 9.24, 8.52, 8.82, 9.82];
 //               ^0     ^1    ^2    ^3    ^4
 //             숫자열/F행 QWERTY 홈행 ZXCV 아랫줄
@@ -762,48 +757,21 @@ RIGHT_HALF = [RIGHT_ROW_1, RIGHT_ROW_2, RIGHT_ROW_3, RIGHT_ROW_4,
 // ---------------------------------------------------------------
 // 배치 / 생성
 // ---------------------------------------------------------------
-UNIT_PITCH   = 20;   // 1U 당 가로 간격
-ROW_PITCH    = 22;   // 행 간격
-RIGHT_HALF_X = 8 * UNIT_PITCH;
-
 // RENDER 로 키를 걸러낸다. 형식은 위 [렌더 선택] 참조
-function pick_axis(value) = is_undef(value) ? 0 : value;
-
-// 첫 원소가 또 리스트면 KEY 목록, 숫자면 [행, 열]
-function is_key_list(sel) = is_list(sel) && len(sel) > 0 && is_list(sel[0]);
-
-function in_key_list(hand, r, i) =
-  len([for (k = RENDER)
-         if (k[0] == hand && k[1] == r + 1 && k[2] == i + 1) 1]) > 0;
+// 축 하나가 맞는지. -1 / 0 / 생략 은 '그 축 전부'. 반(문자열)에도 같이 쓴다
+function axis_match(want, got) =
+  is_undef(want) || want == -1 || want == 0 || want == got;
 
 function selected(hand, r, i) =
-  !is_list(RENDER)    ? true :
-  is_key_list(RENDER) ? in_key_list(hand, r, i) :
-  let (want_row = pick_axis(RENDER[0]),
-       want_col = pick_axis(RENDER[1]))
-  (want_row == 0 || want_row == r + 1) &&
-  (want_col == 0 || want_col == i + 1);
-
-module half(rows, origin_x, origin_y = 0, hand = "L") {
-  for (r = idx(rows)) {
-    base_profile = rows[r][0];
-    row          = rows[r][1];
-    // 행 안에서의 누적 x (U 단위)
-    x_offsets    = [0, each cumsum([for (key = row) cap_width(key)])];
-    for (i = idx(row)) {
-      key = row[i];
-      if (!is_gap(key) && selected(hand, r, i))
-        translate([origin_x + (x_offsets[i] + cap_width(key) / 2) * UNIT_PITCH,
-                   origin_y - r * ROW_PITCH, 0])
-          cap(key, base_profile);
-    }
-  }
-}
+  len([for (k = RENDER)
+         if (axis_match(k[0], hand) &&
+             axis_match(k[1], r + 1) &&
+             axis_match(k[2], i + 1)) 1]) > 0;
 
 // ---------------------------------------------------------------
-// pack 배치 (RENDER="pack") - 프린트용 촘촘한 재배치
+// pack 배치 - 고른 키를 원점부터 촘촘히 다시 깐다 (프린트용)
 //   키보드 모양을 버리고 왼쪽부터 채우다 PACK_WIDTH 를 넘으면 다음 줄로 내린다.
-//   대상은 RENDER 가 고른 키다. 베드를 넘으면 콘솔에 경고가 뜬다 (SKILL.md 5)
+//   대상은 RENDER 가 고른 키다
 // ---------------------------------------------------------------
 
 // 키 바닥 footprint 폭(mm). 1U=18.05, 그 뒤로 1U(19.05)씩. 저/일반 공통
@@ -851,19 +819,5 @@ module pack() {
 echo(str("키 ", len(ALL_KEYS), "개 / pack 배치 약 ",
          round(PACK_SIZE_X), " x ", round(PACK_SIZE_Y),
          " mm / 베드 ", BED[0], " x ", BED[1], " mm"));
-if (PACK_SIZE_X > BED[0] || PACK_SIZE_Y > BED[1])
-  echo("경고: pack 배치가 베드를 넘는다. PACK_WIDTH 를 조정하거나 RENDER=[행] 으로 나눠서 출력할 것");
 
-if (!is_list(RENDER) && RENDER != "pack" && RENDER != "all")
-  echo(str("경고: RENDER(", RENDER, ") 를 모르겠다. ",
-           "\"pack\" / \"all\" / [행, 열] / [KEY(..), ...] 중 하나여야 한다"));
-
-if (is_key_list(RENDER) && len(ALL_KEYS) == 0)
-  echo("경고: RENDER 의 KEY 목록에 걸리는 키가 하나도 없다. 반/행/열을 확인할 것");
-
-if (RENDER == "pack" || (is_key_list(RENDER) && PACK_SELECTED)) {
-  pack();
-} else {                      // "all" / [행, 열] / KEY 목록(PACK_SELECTED=false)
-  half(LEFT_HALF,  0,            hand = "L");
-  half(RIGHT_HALF, RIGHT_HALF_X, hand = "R");
-}
+pack();
