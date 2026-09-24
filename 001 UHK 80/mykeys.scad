@@ -13,14 +13,13 @@ use <./DejaVuSansMono-Bold.ttf>   // 동봉 폰트. 같은 폴더에 파일이 �
 // 렌더 선택
 // ---------------------------------------------------------------
 //   형식은 KEY 목록 하나뿐이다. 규칙은 SKILL.md 5
-//   세 축(반/행/열) 모두 -1 을 넣으면 '그 축 전부' 다
+//   세 축(반/행/열) 모두 문자열로 쓴다. 행·열은 "0" 부터 세고, "-1" 은 '그 축 전부' 다
 
 function KEY(hand, row, col) = [hand, row, col];
 
 // 뽑을 키 목록 (한 줄에 하나)
 RENDER = [
-  KEY("L", -1, -1),
-//  KEY("R", -1, -1),
+  KEY("L", "-1", "-1"),
 ];
 
 // [프린트 베드] 가로 폭만 쓴다. 세로는 넘치면 그냥 줄이 늘어날 뿐이라 안 본다
@@ -584,37 +583,32 @@ module cap(key, base_profile) {
 // 키 배열. 행 = [기본프로파일(-1=저프로파일, 0~4=oem행), [키...]]
 // ---------------------------------------------------------------
 
-// 윗줄 F행. 메인(LEFT_ROW_1 / RIGHT_ROW_1, low = true)과 예비
-// (LEFT_ROW_8 / RIGHT_ROW_8, low = false)를 같은 함수로 만든다.
-// 저프로파일은 메인의 FUNCTION_ROW_LOW 키뿐이고 나머지는 일반 높이다 (SKILL.md 2)
+// 윗줄 F행. 저프로파일은 FUNCTION_ROW_LOW 키뿐이고 나머지는 일반 높이다 (SKILL.md 2)
 FUNCTION_ROW_LOW = ["f1", "f4", "f11", "eject"];
 
 function is_low_key(name) = len([for (n = FUNCTION_ROW_LOW) if (n == name) 1]) > 0;
 
-function function_profile(name, low) = (low && is_low_key(name)) ? -1 : undef;
+function function_profile(name) = is_low_key(name) ? -1 : undef;
 
-// 예비 벌(low = false)은 메인이 저프로파일인 키만 담는다. 나머지는 메인이 이미
-// 일반 높이라 같은 캡이 두 개 나오기 때문이다. 자리는 GAP 으로 비워 열 번호를 맞춘다
 // sides = 앞에서부터 키마다 측면(Mod) 각인. 모자라면 나머지 키는 측면 없음
-function function_row(names, low, sides = []) =
+function function_row(names, sides = []) =
   [for (i = idx(names))
-     (!low && !is_low_key(names[i])) ? GAP(1) :
      KEYCAP(1, WORD(names[i], POS_BOTTOM), i < len(sides) ? sides[i] : [],
-            shape = names[i], profile = function_profile(names[i], low))];
+            shape = names[i], profile = function_profile(names[i]))];
 
-function function_row_left(low) =
-  concat([low ? KEYCAP(1, WORD("esc")) : GAP(1)],
-         function_row(["f1", "f2", "f3", "f4", "f5", "f6"], low));
+function function_row_left() =
+  concat([KEYCAP(1, WORD("esc"))],
+         function_row(["f1", "f2", "f3", "f4", "f5", "f6"]));
 
-function function_row_right(low) =
-  concat(function_row(["f7", "f8", "f9", "f10", "f11", "f12"], low,
+function function_row_right() =
+  concat(function_row(["f7", "f8", "f9", "f10", "f11", "f12"],
                       [SIDE("nlk"), SIDE("="), SIDE("/"), SIDE("*")]),
-         [KEYCAP(1.5, WORD("eject"), profile = function_profile("eject", low)),
+         [KEYCAP(1.5, WORD("eject"), profile = function_profile("eject")),
           GAP(1),
-          low ? KEYCAP(1, WORD("f13", POS_BOTTOM)) : GAP(1)]);   // f13 은 특수기능이 없어 아이콘 없이 번호만
+          KEYCAP(1, WORD("f13", POS_BOTTOM))]);   // f13 은 특수기능이 없어 아이콘 없이 번호만
 
 // -- 왼쪽 ------------------------------------------------------
-LEFT_ROW_1 = [0, function_row_left(true)];
+LEFT_ROW_1 = [0, function_row_left()];
 
 LEFT_ROW_2 = [0, [ KEYCAP(1, SYMBOL("~", "`")),
                    KEYCAP(1, SYMBOL("!", "1")),
@@ -663,13 +657,8 @@ LEFT_ROW_7 = [4, [ KEYCAP(THUMB_2U_WIDTH, WORD("numpad"), stems = THUMB_2U_STEMS
                    KEYCAP(1, ICON("␣", POS_CENTER, SIZE_SPACE),
                           profile = -1, choc2 = true) ]];
 
-// 윗줄 예비 (왼쪽). 메인에서 저프로파일인 f1 / f4 의 일반 높이 캡만 담는다.
-//   행 기본 profile 0 = 숫자열과 같은 OEM 최상단 행.
-//   F행은 숫자열 바로 위 단이라 실제 OEM 세트도 같은 캡을 쓴다.
-LEFT_ROW_8 = [0, function_row_left(false)];
-
 // -- 오른쪽 ----------------------------------------------------
-RIGHT_ROW_1 = [0, function_row_right(true)];
+RIGHT_ROW_1 = [0, function_row_right()];
 
 RIGHT_ROW_2 = [0, [ KEYCAP(1, SYMBOL("&", "7"), SIDE("7")),
                     KEYCAP(1, SYMBOL("*", "8"), SIDE("8")),
@@ -714,9 +703,9 @@ RIGHT_ROW_5 = [3, [ KEYCAP(1, ALPHA("N", "ㅜ")),
                     KEYCAP(1, ICON("▲", POS_CENTER, SIZE_ARROW)),
                     GAP(1) ]];
 
-// 아랫줄. 저프로파일은 RIGHT_ROW_7 엄지열뿐이고 이 행은 전부 일반 높이다
+// 아랫줄. 두 번째 스페이스만 저프로파일이고 나머지는 일반 높이다
 RIGHT_ROW_6 = [4, [ KEYCAP(1.5, ICON("␣", POS_CENTER, SIZE_SPACE)),
-                    KEYCAP(1.5),                                // 기능 없음 - 빈 캡
+                    KEYCAP(1.5, ICON("␣", POS_CENTER, SIZE_SPACE), profile = -1),
                     KEYCAP(1.25, concat(ICON("⌘", POS_ICON_TOP_LEFT),
                                         WORD("cmd", "wr"))),
                     KEYCAP(1.25, concat(ICON("⌥", POS_ICON_TOP_LEFT),
@@ -735,27 +724,24 @@ RIGHT_ROW_7 = [4, [ KEYCAP(1, ICON("␣", POS_CENTER, SIZE_SPACE),
                            stems = THUMB_2U_STEMS_RIGHT, profile = -1, choc2 = true,
                            taper = 1) ]];
 
-// 윗줄 예비 (오른쪽). f11 / eject 의 일반 높이 캡만. LEFT_ROW_8 과 한 세트
-RIGHT_ROW_8 = [0, function_row_right(false)];
-
 LEFT_HALF  = [LEFT_ROW_1, LEFT_ROW_2, LEFT_ROW_3, LEFT_ROW_4, LEFT_ROW_5,
-              LEFT_ROW_6, LEFT_ROW_7, LEFT_ROW_8];
+              LEFT_ROW_6, LEFT_ROW_7];
 RIGHT_HALF = [RIGHT_ROW_1, RIGHT_ROW_2, RIGHT_ROW_3, RIGHT_ROW_4,
-              RIGHT_ROW_5, RIGHT_ROW_6, RIGHT_ROW_7, RIGHT_ROW_8];
+              RIGHT_ROW_5, RIGHT_ROW_6, RIGHT_ROW_7];
 
 // ---------------------------------------------------------------
 // 배치 / 생성
 // ---------------------------------------------------------------
 // 형식은 위 [렌더 선택] 참조
-// 축 하나가 맞는지. -1 / 0 / 생략 은 '그 축 전부'. 반(문자열)에도 같이 쓴다
+// 축 하나가 맞는지. "-1" / 생략 은 '그 축 전부'
 function axis_match(want, got) =
-  is_undef(want) || want == -1 || want == 0 || want == got;
+  is_undef(want) || want == "-1" || want == got;
 
 function selected(hand, r, i) =
   len([for (k = RENDER)
          if (axis_match(k[0], hand) &&
-             axis_match(k[1], r + 1) &&
-             axis_match(k[2], i + 1)) 1]) > 0;
+             axis_match(k[1], str(r)) &&
+             axis_match(k[2], str(i))) 1]) > 0;
 
 // ---------------------------------------------------------------
 // pack 배치 - 고른 키를 원점부터 촘촘히 다시 깐다 (프린트용)
