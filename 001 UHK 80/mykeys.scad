@@ -19,11 +19,11 @@ function KEY(hand, row, col) = [hand, row, col];
 
 // 뽑을 키 목록 (한 줄에 하나)
 RENDER = [
-  KEY("L", "-1", "-1"),
+  KEY("-1", "-1", "-1"),
 ];
 
 // [프린트 베드] 가로 폭만 쓴다. 세로는 넘치면 그냥 줄이 늘어날 뿐이라 안 본다
-BED_WIDTH = 190;
+BED_WIDTH = 250;
 
 PACK_WIDTH   = BED_WIDTH - 3;   // 줄이면 좁고 길게, 늘리면 넓고 짧게
 PACK_GAP_X   = 2.0;             // FDM 에서 안 붙게 하는 여유
