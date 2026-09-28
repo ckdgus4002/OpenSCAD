@@ -1,24 +1,17 @@
-// =============================================================
-//  Parametric Honeycomb Shower Basket  (BOSL2)
-//  require: BOSL2  https://github.com/BelfrySCAD/BOSL2
-// =============================================================
 include <BOSL2/std.scad>
 
 /* [기본 치수 (mm)] */
 width  = 275;
 depth  = 120;
-// 몸통 높이 (Z) ※ 받침대 제외
 height = 75;
 
 /* [두께] */
-// ★ 기본 두께 (벽 / 바닥 / 벌집 살 공통) — 여기만 바꾸면 전체가 따라감
+corner_r = 10;
 thickness = 4;
 wall     = thickness;
 floor_th = thickness;
-corner_r = 10;
 
 /* [벌집 패턴] */
-// 육각 구멍 크기 (마주보는 면 사이 거리)
 hex_size = 13;
 hex_web  = thickness;
 
@@ -31,23 +24,14 @@ floor_margin = 6;
 handles  = true;
 handle_w = 62;
 handle_h = 20;
-// 손잡이 구멍 모서리 라운드 반경 (양쪽 면)
 edge_r   = 1.0;
-// 손잡이 구멍 둘레에 벌집을 뚫지 않고 남길 여유 (클수록 테두리가 두꺼워짐)
 handle_margin = 5;
 
 /* [바닥 받침대] */
 feet   = true;
-feet_h = 20;   // 엄지손가락이 들어갈 높이
-// 받침대 반경. hex_size/2 = 육각 셀에 딱 내접
+feet_h = 20;
 feet_r = hex_size / 2;
 
-// 받침대 배치 = [ 육각 줄 j , 오른쪽 절반의 가로 칸 i 목록 ]
-//   j : 0 = 정중앙 줄, + 위쪽 / - 아래쪽.
-//       두께를 바꾸면 격자가 변해 줄 수가 줄 수 있음 -> 없는 줄은 가장 바깥 줄로 자동 보정
-//   i : 오른쪽 방향 칸 번호. 왼쪽은 자동으로 좌우 대칭 배치됨 (항상 대칭 보장)
-//       짝수 줄은 i=0 이 정중앙, 홀수 줄은 i=0 이 중앙에서 반 칸 오른쪽
-//       -> 짝수 줄에 0 을 넣으면 정중앙 1개가 생김
 foot_layout = [
     [-4, [2, 6]],
     [ 0, [0, 5]],
@@ -55,26 +39,20 @@ foot_layout = [
 ];
 
 /* [Hidden] */
-// 상단 비드 반경. wall/2 = 완전한 반원 마감
 bead_r = wall / 2;
-bot_r  = 1.2;
+bot_r  = 10;
 $fn = 48;
 
-R       = hex_size / sqrt(3);               // 육각 외접원 반경
-Rp      = R + hex_web / sqrt(3);            // 살 두께 포함 피치용 반경
-dxg     = Rp * sqrt(3);                     // 육각 격자 가로 피치 (한 칸)
-dyg     = Rp * 1.5;                         // 육각 격자 세로 피치 (한 줄)
+R       = hex_size / sqrt(3);
+Rp      = R + hex_web / sqrt(3);
+dxg     = Rp * sqrt(3);
+dyg     = Rp * 1.5;
 fh      = feet ? feet_h : 0;
 total_h = height + fh;
 mesh_h  = height - rim_h - base_band;
 mesh_z  = (base_band + height - rim_h) / 2;
-hz      = height - rim_h - 5 - handle_h / 2; // 손잡이 중심 높이
+hz      = height - rim_h - 5 - handle_h / 2;
 
-// -------------------------------------------------------------
-//  육각 격자 좌표
-//  꼭짓점이 위를 향하게 배치 -> 서포트 없이 출력 가능
-//  중심이 영역 안에 있는 것만 -> 가장자리 얇은 조각 방지
-// -------------------------------------------------------------
 function hex_centers(w, h) =
     let(dx = Rp * sqrt(3), dy = Rp * 1.5,
         nx = ceil(w / dx / 2) + 1, ny = ceil(h / dy / 2) + 1)
@@ -86,11 +64,8 @@ floor_w = width - 2 * (wall + floor_margin);
 floor_d = depth - 2 * (wall + floor_margin);
 fc      = hex_centers(floor_w, floor_d);
 
-// 실제로 존재하는 육각 줄의 최대 번호 (두께에 따라 달라짐)
 jmax = floor(floor_d / 2 / dyg);
 
-// foot_layout 을 좌표로 펼침. 줄 번호는 범위 안으로 클램프하고,
-// 가로는 오른쪽 절반만 지정한 뒤 ±로 미러링 -> 두께가 바뀌어도 항상 좌우 대칭
 foot_ref = [for (r = foot_layout, i = r[1], sx = [1, -1])
     let(j = min(jmax, max(-jmax, r[0])))
     [sx * (i * dxg + ((j % 2 == 0) ? 0 : dxg / 2)), j * dyg]];
@@ -98,27 +73,18 @@ foot_ref = [for (r = foot_layout, i = r[1], sx = [1, -1])
 foot_idx = unique([for (t = foot_ref) min_index([for (c = fc) norm(c - t)])]);
 foot_pts = [for (i = foot_idx) fc[i]];
 
-// foot_layout 의 i 가 줄 범위를 벗어나면 조용히 엉뚱한 칸으로 붙으므로 경고
 foot_err = max([for (t = foot_ref) min([for (c = fc) norm(c - t)])]);
 
 module hexprism(t) { linear_extrude(t, center = true) hexagon(r = R, align_tip = BACK); }
 
 module hexcut(w, h, t) {
     intersection() {
-        // 격자 중심이 경계 바로 밖(R 이내)에 있어도 포함시켜 그 일부가 cuboid 안으로
-        // 들어오면 그만큼 뚫리게 함 -> 테두리에서 "반쪽 셀"이 통째로 막히는 것 방지
         for (c = hex_centers(w + 2 * R, h + 2 * R)) move(c) hexprism(t);
         cuboid([w, h, t]);
     }
 }
 
-// -------------------------------------------------------------
-//  아래 모듈들은 "몸통 바닥 중심"이 원점인 좌표계 기준
-// -------------------------------------------------------------
-
 module wall_mesh_fb() {
-    // 모서리 살(corner_r) 경계에서 육각이 반쪽만 걸치면 안 뚫리고 막히므로,
-    // 격자 한 칸(dxg)만큼 더 넓혀서 그 반쪽 셀까지 확실히 뚫리게 함
     up(mesh_z) xrot(90) hexcut(width - 2 * corner_r + dxg, mesh_h, depth + 2);
 }
 
@@ -129,7 +95,6 @@ module wall_mesh_lr() {
     }
 }
 
-// 받침대가 놓이는 육각은 뚫지 않아 통짜 패드가 됨
 module floor_mesh() {
     up(floor_th / 2)
     intersection() {
@@ -138,15 +103,12 @@ module floor_mesh() {
     }
 }
 
-// 손잡이 구멍을 handle_margin 만큼 부풀린 캡슐 하나뿐
-// -> 손잡이 좌/우/위쪽도 벌집이 그대로 뚫림
 module handle_keepout(grow) {
     r = handle_h / 2 + grow;
     up(hz) hull() ycopies(spacing = handle_w - handle_h, n = 2)
         cyl(r = r, h = width + 8, orient = RIGHT);
 }
 
-// 벽 두께 구간에서 양쪽 면으로 벌어지는 필렛 -> 모서리 둥글게
 module handle_cut() {
     prof_w = handle_w; prof_h = handle_h;
     up(hz) xcopies(spacing = width - wall, n = 2) zrot(90) xrot(90)
@@ -155,7 +117,6 @@ module handle_cut() {
             offset_sweep(rect([prof_w, prof_h], rounding = prof_h / 2), height = wall,
                          bottom = os_circle(r = -edge_r), top = os_circle(r = -edge_r),
                          steps = 8);
-        // 벽 바깥으로 연장해 확실히 관통
         up(wall / 2)     linear_extrude(4) offset(r = edge_r) rect([prof_w, prof_h], rounding = prof_h / 2);
         down(wall / 2 + 4) linear_extrude(4) offset(r = edge_r) rect([prof_w, prof_h], rounding = prof_h / 2);
     }
@@ -172,20 +133,16 @@ module bottom_edge_mask() {
 module top_bead() {
     up(height - bead_r)
         path_sweep(circle(r = bead_r, $fn = 20),
-                   path3d(rect([width - wall, depth - wall], rounding = corner_r - bead_r)),
+                   path3d(rect([width - wall, depth - wall], rounding = max(corner_r - wall / 2, bead_r + wall / 2))),
                    closed = true);
 }
 
-// 채워진 육각 셀에 내접하는 원기둥, 아래로 갈수록 좁아져 오버행 없음
 module basket_feet() {
     for (p = foot_pts)
         move([p.x, p.y, 0])
             cyl(r1 = feet_r * 0.8, r2 = feet_r, h = fh + 0.6, anchor = BOT);
 }
 
-// -------------------------------------------------------------
-//  조립
-// -------------------------------------------------------------
 up(fh)
 diff()
 rect_tube(size = [width, depth], wall = wall, h = height - bead_r,
