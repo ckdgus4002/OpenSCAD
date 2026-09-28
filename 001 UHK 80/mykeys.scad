@@ -23,7 +23,7 @@ RENDER = [
 ];
 
 // [프린트 베드] 가로 폭만 쓴다. 세로는 넘치면 그냥 줄이 늘어날 뿐이라 안 본다
-BED_WIDTH = 250;
+BED_WIDTH = 190;
 
 PACK_WIDTH   = BED_WIDTH - 3;   // 줄이면 좁고 길게, 늘리면 넓고 짧게
 PACK_GAP_X   = 2.0;             // FDM 에서 안 붙게 하는 여유
