@@ -433,6 +433,80 @@ module function_key2d(name) {
 // F키 아이콘은 번호 각인(POS_BOTTOM)의 반대편인 상판 위쪽에 놓는다
 FUNCTION_KEY_POSITION = [0, TOP_HEIGHT / 3.5 * 0.85];
 
+// -- 마우스 키 (Mod 레이어 왼손, 앞면) ---------------------------
+//   전부 같은 마우스 + 기호 두 개. 기호는 이동 = 화살표, 클릭 = 포인터 + 클릭선 (SKILL.md 14)
+MOUSE_WIDTH     = 3.0;
+MOUSE_HEIGHT    = 4.2;
+MOUSE_THICKNESS = 0.5;   // 윤곽·칸막이·클릭선 선폭. 버튼 살 0.75mm
+MOUSE_SPLIT_Y   = 0.3;   // 버튼/몸통 칸막이 중심 높이
+MOUSE_GAP       = 0.8;   // 마우스와 기호 사이
+
+ARROW_LENGTH      = 3.0;
+ARROW_HEAD_LENGTH = 1.3;
+ARROW_HEAD_WIDTH  = 2.2;
+ARROW_THICKNESS   = 0.6;   // 화살대 굵기
+
+CLICK_CURSOR_SCALE = 2.0;              // 보조메뉴 커서(MENU_CURSOR) 배율
+CLICK_RAY_ANGLES   = [90, 135, 180];   // 포인터 끝에서 뻗는 클릭선 방향
+CLICK_RAY_START    = 1.15;             // 45도 간격에서 선 사이 살이 0.4 가 되는 최소 거리
+CLICK_RAY_LENGTH   = 0.9;              // 왼쪽 클릭선 끝과 마우스 사이 살 0.45. 늘리면 여기가 먼저 좁아진다
+
+// 포인터 + 클릭선 전체를 가운데에 맞추는 보정. 0.82 / 1.22 는 MENU_CURSOR 의 오른쪽·아래쪽 끝
+CLICK_REACH    = CLICK_RAY_START + CLICK_RAY_LENGTH;
+CLICK_BOUNDS_X = [min([for (a = CLICK_RAY_ANGLES) CLICK_REACH * cos(a)]), 0.82 * CLICK_CURSOR_SCALE];
+CLICK_BOUNDS_Y = [-1.22 * CLICK_CURSOR_SCALE, max([for (a = CLICK_RAY_ANGLES) CLICK_REACH * sin(a)])];
+CLICK_POSITION = [-(CLICK_BOUNDS_X[0] + CLICK_BOUNDS_X[1]) / 2,
+                  -(CLICK_BOUNDS_Y[0] + CLICK_BOUNDS_Y[1]) / 2];
+
+module mouse2d() {
+  $fn = 40;
+  inner = [MOUSE_WIDTH - 2 * MOUSE_THICKNESS, MOUSE_HEIGHT - 2 * MOUSE_THICKNESS];
+  difference() {                                                  // 윤곽
+    rect([MOUSE_WIDTH, MOUSE_HEIGHT], rounding = MOUSE_WIDTH / 2);
+    rect(inner, rounding = inner[0] / 2);
+  }
+  intersection() {
+    rect(inner, rounding = inner[0] / 2);
+    union() {
+      back(MOUSE_SPLIT_Y) rect([MOUSE_WIDTH, MOUSE_THICKNESS]);     // 가로 칸막이
+      move([-MOUSE_THICKNESS / 2, MOUSE_SPLIT_Y])                   // 세로 칸막이
+        square([MOUSE_THICKNESS, MOUSE_HEIGHT]);
+    }
+  }
+}
+
+module arrow2d() {                    // 오른쪽을 가리킨다. 가운데 기준
+  tip  = ARROW_LENGTH / 2;
+  base = tip - ARROW_HEAD_LENGTH;
+  polygon([[tip, 0], [base, ARROW_HEAD_WIDTH / 2], [base, -ARROW_HEAD_WIDTH / 2]]);
+  move([-tip, -ARROW_THICKNESS / 2])  // 화살대는 머리 속으로 0.1 물린다
+    square([ARROW_LENGTH - ARROW_HEAD_LENGTH + 0.1, ARROW_THICKNESS]);
+}
+
+module click2d() {                    // 포인터 + 클릭선. 가운데 기준
+  move(CLICK_POSITION) {
+    scale(CLICK_CURSOR_SCALE) polygon(MENU_CURSOR);
+    for (angle = CLICK_RAY_ANGLES)
+      rotate(angle) right(CLICK_RAY_START + CLICK_RAY_LENGTH / 2)
+        rect([CLICK_RAY_LENGTH, MOUSE_THICKNESS], rounding = MOUSE_THICKNESS / 2, $fn = 16);
+  }
+}
+
+// [마우스][기호]. 기호 칸을 마우스와 같은 폭으로 보고, 둘을 합친 폭의 가운데를 원점에 둔다
+module mouse_pair2d() {
+  pitch = (MOUSE_WIDTH + MOUSE_GAP) / 2;
+  left(pitch) mouse2d();
+  right(pitch) children();
+}
+
+module mouse_key2d(name) {
+  if      (name == "mouse_click") mouse_pair2d() click2d();
+  else if (name == "mouse_up")    mouse_pair2d() rotate(90)  arrow2d();
+  else if (name == "mouse_left")  mouse_pair2d() rotate(180) arrow2d();
+  else if (name == "mouse_right") mouse_pair2d() arrow2d();
+  else if (name == "mouse_down")  mouse_pair2d() rotate(270) arrow2d();
+}
+
 // -- 도형 각인 깊이 ---------------------------------------------
 //   문자 각인($inset_legend_depth)은 minkowski 안쪽에서 잘려 실제로 더 깊게 파인다.
 //   도형은 캡을 다 만든 뒤 바깥에서 빼는 방식이라 그 보정이 없어, 여기서 직접 준다.
@@ -447,9 +521,20 @@ module shape_at(position, profile) {
         children();
 }
 
+// 앞면 도형. KeyV2 의 앞면 글자와 같은 자리(앞면 한가운데)에 놓는다
+module front_shape_at(profile) {
+  depth = (profile == -1) ? SHAPE_DEPTH_LOW_PROFILE : SHAPE_DEPTH_STANDARD;
+  front_of_key()
+    rotate([90, 0, 0])
+      translate([0, 0, -depth])
+        linear_extrude(depth + $dish_depth + 0.01)
+          children();
+}
+
 module shape_cut(kind, profile) {
   if      (kind == "globe") shape_at(GLOBE_POSITION, profile) globe2d();
   else if (kind == "menu")  shape_at(MENU_POSITION,  profile) menu2d();
+  else if (starts_with(kind, "mouse_")) front_shape_at(profile) mouse_key2d(kind);
   else                      shape_at(FUNCTION_KEY_POSITION, profile) function_key2d(kind);
 }
 
@@ -581,6 +666,7 @@ module cap(key, base_profile) {
 
 // ---------------------------------------------------------------
 // 키 배열. 행 = [기본프로파일(-1=저프로파일, 0~4=oem행), [키...]]
+//   측면 각인 = Mod 레이어. 오른손 넘패드 / 왼손 마우스 (SKILL.md 13)
 // ---------------------------------------------------------------
 
 // 윗줄 F행. 저프로파일은 FUNCTION_ROW_LOW 키뿐이고 나머지는 일반 높이다 (SKILL.md 2)
@@ -620,22 +706,22 @@ LEFT_ROW_2 = [0, [ KEYCAP(1, SYMBOL("~", "`")),
 
 LEFT_ROW_3 = [1, [ KEYCAP(1.5, WORD("tab", "wl")),
                    KEYCAP(1, ALPHA_DOUBLE("Q", "ㅂ", "ㅃ")),
-                   KEYCAP(1, ALPHA_DOUBLE("W", "ㅈ", "ㅉ")),
+                   KEYCAP(1, ALPHA_DOUBLE("W", "ㅈ", "ㅉ"), shape = "mouse_up"),
                    KEYCAP(1, ALPHA_DOUBLE("E", "ㄷ", "ㄸ")),
                    KEYCAP(1, ALPHA_DOUBLE("R", "ㄱ", "ㄲ")),
                    KEYCAP(1, ALPHA_DOUBLE("T", "ㅅ", "ㅆ")) ]];
 
 LEFT_ROW_4 = [2, [ KEYCAP(1.75, WORD("caps lock", "wl")),
-                   KEYCAP(1, ALPHA("A", "ㅁ")),
-                   KEYCAP(1, ALPHA("S", "ㄴ")),
-                   KEYCAP(1, ALPHA("D", "ㅇ")),
+                   KEYCAP(1, ALPHA("A", "ㅁ"), shape = "mouse_left"),
+                   KEYCAP(1, ALPHA("S", "ㄴ"), shape = "mouse_click"),
+                   KEYCAP(1, ALPHA("D", "ㅇ"), shape = "mouse_right"),
                    KEYCAP(1, ALPHA("F", "ㄹ"), homing = true),
                    KEYCAP(1, ALPHA("G", "ㅎ")) ]];
 
 // 좌측 시프트: 2.25U 한 칸 = 스위치 1개 + 양옆 스태빌라이저 -> 스템 3개
 LEFT_ROW_5 = [3, [ KEYCAP(2.25, WORD("shift", "wl"), stems = LEFT_SHIFT_STEMS),
                    KEYCAP(1, ALPHA("Z", "ㅋ")),
-                   KEYCAP(1, ALPHA("X", "ㅌ")),
+                   KEYCAP(1, ALPHA("X", "ㅌ"), shape = "mouse_down"),
                    KEYCAP(1, ALPHA("C", "ㅊ")),
                    KEYCAP(1, ALPHA("V", "ㅍ")),
                    KEYCAP(1, ALPHA("B", "ㅠ")) ]];
@@ -652,7 +738,7 @@ LEFT_ROW_6 = [4, [ KEYCAP(1.25, ICON("fn", POS_ICON_TOP_RIGHT), shape = "globe")
 // 엄지열 - 저프로파일. 행 기본값 4 를 무시하도록 키마다 profile = -1 로 덮어쓴다
 //   2U 는 스템 3개 (스위치 + 스태빌 2), 사다리꼴. 1U 는 중앙 1개, 직사각형
 //   왼손 2U 는 사다리꼴이 왼쪽이라 taper = -1. 스템은 곧은 변(오른쪽)으로 치우친다
-LEFT_ROW_7 = [4, [ KEYCAP(THUMB_2U_WIDTH, WORD("numpad"), stems = THUMB_2U_STEMS_LEFT,
+LEFT_ROW_7 = [4, [ KEYCAP(THUMB_2U_WIDTH, WORD("mod"), stems = THUMB_2U_STEMS_LEFT,
                           profile = -1, choc2 = true, taper = -1),
                    KEYCAP(1, ICON("␣", POS_CENTER, SIZE_SPACE),
                           profile = -1, choc2 = true) ]];
