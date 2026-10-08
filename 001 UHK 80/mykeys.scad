@@ -670,7 +670,7 @@ module cap(key, base_profile) {
 // ---------------------------------------------------------------
 
 // 윗줄 F행. 저프로파일은 FUNCTION_ROW_LOW 키뿐이고 나머지는 일반 높이다 (SKILL.md 2)
-FUNCTION_ROW_LOW = ["f1", "f4", "f11", "eject"];
+FUNCTION_ROW_LOW = ["f1", "f3", "f11", "eject", "f13"];
 
 function is_low_key(name) = len([for (n = FUNCTION_ROW_LOW) if (n == name) 1]) > 0;
 
@@ -691,7 +691,7 @@ function function_row_right() =
                       [SIDE("nlk"), SIDE("="), SIDE("/"), SIDE("*")]),
          [KEYCAP(1.5, WORD("eject"), profile = function_profile("eject")),
           GAP(1),
-          KEYCAP(1, WORD("f13", POS_BOTTOM))]);   // f13 은 특수기능이 없어 아이콘 없이 번호만
+          KEYCAP(1, WORD("f13", POS_BOTTOM), profile = function_profile("f13"))]);   // f13 은 특수기능이 없어 아이콘 없이 번호만
 
 // -- 왼쪽 ------------------------------------------------------
 LEFT_ROW_1 = [0, function_row_left()];

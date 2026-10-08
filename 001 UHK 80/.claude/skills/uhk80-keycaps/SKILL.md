@@ -65,7 +65,7 @@ mykeys.scad 작업 규칙 전부. 코드를 고치기 전에 읽을 것.
 
 ## 2. 프로파일 - 저/일반 2단
 
-**저프로파일(치클렛, g20)** : 윗줄 f1 / f4 / f11 / eject, 오른손 아랫줄 두 번째 스페이스, 양손 엄지열 4개.
+**저프로파일(치클렛, g20)** : 윗줄 f1 / f3 / f11 / eject / f13, 오른손 아랫줄 두 번째 스페이스, 양손 엄지열 4개.
 
 - 전부 `g20_row(3)` 고정 + `low_profile_settings()` 로 평면화한다.
 - `low_profile_settings()` 이 `$top_tilt` / `$top_skew` / `$total_depth` 를 전부 덮어쓰므로
