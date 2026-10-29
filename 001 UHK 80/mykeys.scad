@@ -80,7 +80,7 @@ module homing_top_cut() {
 //   저/일반은 증상이 정반대라 값을 나눴다. 하나로 묶으면 한쪽이 망가진다.
 //   슬롭 표와 근거는 SKILL.md 7
 LOW_PROFILE_STEM_SLOP       = 0.45;   // 저프로파일: 바깥 기둥만 줄인다
-LOW_PROFILE_STEM_INNER_SLOP = 0.20;   // 안쪽은 그대로. 여기 물림은 문제 없었다
+LOW_PROFILE_STEM_INNER_SLOP = 0.20;   // 안쪽은 그대로. 윗줄은 FUNCTION_ROW_LOW_INNER_SLOP 를 쓴다
 STANDARD_STEM_SLOP          = 0.35;   // 일반 높이: 바깥은 그대로
 STANDARD_STEM_INNER_SLOP    = 0.05;   // 안쪽 십자를 좁힌다
 
@@ -204,6 +204,9 @@ RIGHT_SHIFT_INNER_SLOP = 0.20;   // 이 키만 십자 슬롯을 KeyV2 기본값�
 //   헐겁다고 줄이지 말 것 (SKILL.md 10)
 LEFT_SHIFT_STAB_PITCH = 11.9;   // 캡 중심 -> 스태빌 스템 중심 (mm)
 LEFT_SHIFT_STEMS      = [[-LEFT_SHIFT_STAB_PITCH, 0], [0, 0], [LEFT_SHIFT_STAB_PITCH, 0]];
+
+// -- 물림은 스템 간격 말고 여기서 푼다 (SKILL.md 10)
+LEFT_SHIFT_INNER_SLOP = 0.20;   // 이 키만 십자 슬롯을 KeyV2 기본값으로 되돌려 헐겁게
 
 // ---------------------------------------------------------------
 // 엄지열 2U - 스템 3개 (가운데 스위치 + 양옆 스태빌라이저)
@@ -671,16 +674,20 @@ module cap(key, base_profile) {
 
 // 윗줄 F행. 저프로파일은 FUNCTION_ROW_LOW 키뿐이고 나머지는 일반 높이다 (SKILL.md 2)
 FUNCTION_ROW_LOW = ["f1", "f3", "f11", "eject", "f13"];
+FUNCTION_ROW_LOW_INNER_SLOP = 0.35;   // 이 줄만 십자 슬롯을 넓힌다 (SKILL.md 7)
 
 function is_low_key(name) = len([for (n = FUNCTION_ROW_LOW) if (n == name) 1]) > 0;
 
 function function_profile(name) = is_low_key(name) ? -1 : undef;
 
+function function_inner_slop(name) = is_low_key(name) ? FUNCTION_ROW_LOW_INNER_SLOP : undef;
+
 // sides = 앞에서부터 키마다 측면(Mod) 각인. 모자라면 나머지 키는 측면 없음
 function function_row(names, sides = []) =
   [for (i = idx(names))
      KEYCAP(1, WORD(names[i], POS_BOTTOM), i < len(sides) ? sides[i] : [],
-            shape = names[i], profile = function_profile(names[i]))];
+            shape = names[i], profile = function_profile(names[i]),
+            inner_slop = function_inner_slop(names[i]))];
 
 function function_row_left() =
   concat([KEYCAP(1, WORD("esc"))],
@@ -689,9 +696,11 @@ function function_row_left() =
 function function_row_right() =
   concat(function_row(["f7", "f8", "f9", "f10", "f11", "f12"],
                       [SIDE("nlk"), SIDE("="), SIDE("/"), SIDE("*")]),
-         [KEYCAP(1.5, WORD("eject"), profile = function_profile("eject")),
+         [KEYCAP(1.5, WORD("eject"), profile = function_profile("eject"),
+                 inner_slop = function_inner_slop("eject")),
           GAP(1),
-          KEYCAP(1, WORD("f13", POS_BOTTOM), profile = function_profile("f13"))]);   // f13 은 특수기능이 없어 아이콘 없이 번호만
+          KEYCAP(1, WORD("f13", POS_BOTTOM), profile = function_profile("f13"),
+                 inner_slop = function_inner_slop("f13"))]);   // f13 은 특수기능이 없어 아이콘 없이 번호만
 
 // -- 왼쪽 ------------------------------------------------------
 LEFT_ROW_1 = [0, function_row_left()];
@@ -719,7 +728,8 @@ LEFT_ROW_4 = [2, [ KEYCAP(1.75, WORD("caps lock", "wl")),
                    KEYCAP(1, ALPHA("G", "ㅎ")) ]];
 
 // 좌측 시프트: 2.25U 한 칸 = 스위치 1개 + 양옆 스태빌라이저 -> 스템 3개
-LEFT_ROW_5 = [3, [ KEYCAP(2.25, WORD("shift", "wl"), stems = LEFT_SHIFT_STEMS),
+LEFT_ROW_5 = [3, [ KEYCAP(2.25, WORD("shift", "wl"), stems = LEFT_SHIFT_STEMS,
+                          inner_slop = LEFT_SHIFT_INNER_SLOP),
                    KEYCAP(1, ALPHA("Z", "ㅋ")),
                    KEYCAP(1, ALPHA("X", "ㅌ"), shape = "mouse_down"),
                    KEYCAP(1, ALPHA("C", "ㅊ")),
@@ -789,9 +799,8 @@ RIGHT_ROW_5 = [3, [ KEYCAP(1, ALPHA("N", "ㅜ")),
                     KEYCAP(1, ICON("▲", POS_CENTER, SIZE_ARROW)),
                     GAP(1) ]];
 
-// 아랫줄. 두 번째 스페이스만 저프로파일이고 나머지는 일반 높이다
 RIGHT_ROW_6 = [4, [ KEYCAP(1.5, ICON("␣", POS_CENTER, SIZE_SPACE)),
-                    KEYCAP(1.5, ICON("␣", POS_CENTER, SIZE_SPACE), profile = -1),
+                    KEYCAP(1.5, ICON("␣", POS_CENTER, SIZE_SPACE)),
                     KEYCAP(1.25, concat(ICON("⌘", POS_ICON_TOP_LEFT),
                                         WORD("cmd", "wr"))),
                     KEYCAP(1.25, concat(ICON("⌥", POS_ICON_TOP_LEFT),
