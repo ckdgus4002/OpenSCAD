@@ -118,6 +118,8 @@ $cherry_bevel = true;
 $stem_support_height = .8;
 // Font used for text
 $font="DejaVu Sans Mono:style=Book";
+// UHK80 로컬 수정: 글자 윤곽을 사방으로 키우는 양(mm). features/legends.scad 의 keytext() 가 쓴다
+$legend_bold = 0;
 // Whether or not to render fake keyswitches to check clearances
 $clearance_check = false;
 // Should be faster, also required for concave shapes

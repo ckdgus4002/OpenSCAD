@@ -3,11 +3,11 @@
 // .claude/skills/uhk80-keycaps/SKILL.md 에 있다. 코드를 고치기 전에 먼저 읽을 것.
 // (아래 주석의 "SKILL.md N" 은 그 문서의 N 번 항목을 가리킨다)
 // 실행 전제: OpenSCAD 개발 스냅샷(2021.01 불가) / 같은 폴더에 KeyV2 폴더 /
-//            BOSL2 설치 / 같은 폴더에 DejaVuSansMono-Bold.ttf   (SKILL.md 1)
+//            BOSL2 설치 / 같은 폴더에 NotoSansCJKkr-Black.otf   (SKILL.md 1)
 
 include <./KeyV2/includes.scad>
 include <BOSL2/std.scad>     // 반드시 KeyV2 뒤에 include 할 것.
-use <./DejaVuSansMono-Bold.ttf>   // 동봉 폰트. 같은 폴더에 파일이 있어야 한다
+use <./NotoSansCJKkr-Black.otf>   // 동봉 폰트. 같은 폴더에 파일이 있어야 한다
 
 // ---------------------------------------------------------------
 // 렌더 선택
@@ -20,6 +20,10 @@ function KEY(hand, row, col) = [hand, row, col];
 // 뽑을 키 목록 (한 줄에 하나)
 RENDER = [
   KEY("-1", "-1", "-1"),
+  // KEY("L", "3", "0"),
+  // KEY("L", "4", "0"),
+  // KEY("R", "5", "1"),
+  // KEY("R", "5", "7"),
 ];
 
 // [프린트 베드] 가로 폭만 쓴다. 세로는 넘치면 그냥 줄이 늘어날 뿐이라 안 본다
@@ -31,6 +35,9 @@ PACK_PITCH_Y = 21.0;            // 줄 간격 = 키 세로(약 18) + 앞뒤 여�
 
 // 스템 서포트: "tines" | "disable"
 STEM_SUPPORT = "disable";
+
+// 출력 방식: "resin" | "filament". 스템 십자 여유 일부가 이 값을 따른다 (SKILL.md 7)
+PRINT_METHOD = "resin";
 
 // ---------------------------------------------------------------
 // [호밍 돌기 - 에프/제이 앞쪽 가로 바]
@@ -77,12 +84,15 @@ module homing_top_cut() {
 // ---------------------------------------------------------------
 // [스템 여유 - 프로파일별로 따로 잡는다]
 // ---------------------------------------------------------------
-//   저/일반은 증상이 정반대라 값을 나눴다. 하나로 묶으면 한쪽이 망가진다.
-//   슬롭 표와 근거는 SKILL.md 7
+//   저/일반은 스위치가 달라(SKILL.md 2) 값을 나눴다. 하나로 묶으면 한쪽이 망가진다.
+//   출력 방식(PRINT_METHOD)마다 다른 값은 by_print_method() 로 둔다. 슬롭 표와 근거는 SKILL.md 7
+function by_print_method(filament, resin) = PRINT_METHOD == "filament" ? filament : resin;
+
 LOW_PROFILE_STEM_SLOP       = 0.45;   // 저프로파일: 바깥 기둥만 줄인다
 LOW_PROFILE_STEM_INNER_SLOP = 0.20;   // 안쪽은 그대로. 윗줄은 FUNCTION_ROW_LOW_INNER_SLOP 를 쓴다
 STANDARD_STEM_SLOP          = 0.35;   // 일반 높이: 바깥은 그대로
-STANDARD_STEM_INNER_SLOP    = 0.05;   // 안쪽 십자를 좁힌다
+// 필라멘트는 0.20 이 헐거워 좁혔고, 레진은 0.05 에서 스템이 부러졌다
+STANDARD_STEM_INNER_SLOP    = by_print_method(filament = 0.05, resin = 0.20);
 
 // ---------------------------------------------------------------
 // [Choc v2 원통 기둥 - 엄지열 전용]
@@ -129,43 +139,61 @@ module choc2_trim(stems) {
 $stabilizer_type = "disable";   // 2U 이상 자동 스태빌 스템 차단.
                                 //   엄지 2U / 시프트 스태빌은 아래 상수로 직접 준다
 
-FONT_ENGLISH = "DejaVu Sans Mono:style=Bold";   // 위 use<> 로 동봉된 폰트
-// SIZE_LATIN 3.2 기준 세로획이 Book 0.44mm / Bold 0.64mm (렌더 실측).
-// 0.4 노즐 압출폭 0.42mm 로 Book 은 한 줄에 겨우 걸치고, Bold 는 1.5 줄이라 홈이 뚜렷하다
-FONT_HANGUL  = "Apple SD Gothic Neo:style=Bold";
-// 한글이 비어 보이면 Help > Font List 에서 이름 확인 후 FONT_HANGUL 교체
+// 영문·한글 각인을 전부 이 글꼴 하나로 쓴다 (위 use<> 로 동봉). 굵기 근거는 SKILL.md 13
+FONT = "Noto Sans CJK KR:style=Black";
+EM_PER_SIZE = 100 / 72;   // text() 의 size 1 에 해당하는 em. 글자 폭 계산에 쓴다
+// 글자 윤곽을 사방으로 키우는 양(mm). 획이 이 값의 2배만큼 굵어진다. Black 보다 굵은 글꼴이 없어 여기서 굵힌다 (SKILL.md 13)
+LEGEND_BOLD = 0.05;
 
 // 각인 글자 크기(mm). 글자가 길어도 크기를 줄이지 않는다 - 대신 약어를 쓴다
 SIZE_WORD             = 3.2;
 SIZE_LATIN            = 3.2;
-SIZE_HANGUL           = 2.8;
+SIZE_HANGUL           = 3.7;   // 낱자. 이 글꼴은 낱자를 작게 그려, 획이 영문과 같아지는 크기로 둔다
+SIZE_HANGUL_SYLLABLE  = 2.8;   // 한/A 의 '한'. 완성형 글자는 크게 그려져 이 크기에서 영문 대문자와 높이가 비슷하다
 SIZE_SYMBOL           = 3.0;   // 숫자열처럼 위/아래 두 벌
-SIZE_ICON             = 3.2;   // ctrl / opt / cmd / fn (모서리)
-SIZE_BACKSPACE_DELETE = 4.0;
-SIZE_SPACE            = 4.2;
-SIZE_ARROW            = 2.8;
-SIZE_SIDE             = 3.0;   // 측면(Mod)
+SIZE_ICON             = 3.2;   // fn (모서리)
+SIZE_ARROW            = 1.8;   // ▲◀▼▶ 는 이 글꼴에서 크게 그려져 있어 폭이 약 2.3mm 가 되는 크기로 둔다
+SIZE_SIDE             = 3.0;   // 측면(Fn2)
 
 // 각인 위치. 1칸 = 상판 폭(세로는 높이)의 1/3.5
 POS_CENTER         = [ 0.00,  0.00];
-POS_TOP_LEFT       = [-0.90, -0.85];   // 쌍자음
-POS_TOP_RIGHT      = [ 0.90, -0.85];   // 한글
+POS_TOP_LEFT       = [-0.73, -0.85];   // 쌍자음. 낱자가 커져 여백 안에 들어오게 당긴 값 (SKILL.md 13)
+POS_TOP_RIGHT      = [ 0.73, -0.85];   // 한글. 위와 같은 이유
 POS_BOTTOM_LEFT    = [-0.90,  0.85];   // 알파벳
 POS_TOP            = [ 0.00, -0.85];   // 시프트 심볼
 POS_BOTTOM         = [ 0.00,  0.85];   // 기본 심볼, F키 번호
 POS_ICON_TOP_LEFT  = [-1.05, -0.88];
 POS_ICON_TOP_RIGHT = [ 1.05, -0.88];
 
-// 플러시(가장자리) 정렬 - oem 상판 폭 기준
-ADVANCE_RATIO = 0.79;    // 모노스페이스 글자당 폭 / 크기 비율 (실측)
-MARGIN        = 1.3;     // 상판 가장자리 여백 (mm)
-TOP_HEIGHT    = 14.05;   // oem 상판 세로 (mm)
+// 플러시(가장자리) 정렬 - oem 상판 폭 기준. 글자 잉크 끝을 MARGIN 에 맞춘다
+MARGIN     = 1.3;     // 상판 가장자리 여백 (mm)
+TOP_HEIGHT = 14.05;   // oem 상판 세로 (mm)
+
+// 영문 소문자 a~z 의 [글자 폭, 왼쪽 여백, 오른쪽 여백] (em). 글꼴 파일에서 읽은 값이다.
+// 플러시 단어는 소문자만 쓴다. 글꼴을 바꾸면 이 표를 다시 뽑아야 한다 (SKILL.md 13)
+LATIN_METRICS = [
+  [0.606, 0.047, 0.065], [0.658, 0.072, 0.043], [0.537, 0.040, 0.026],   // a b c
+  [0.658, 0.043, 0.071], [0.596, 0.040, 0.042], [0.398, 0.026, -0.035],  // d e f
+  [0.616, 0.038, 0.017], [0.658, 0.072, 0.066], [0.321, 0.062, 0.061],   // g h i
+  [0.323, -0.060, 0.061], [0.634, 0.072, 0.005], [0.332, 0.072, 0.010],  // j k l
+  [0.985, 0.072, 0.067], [0.658, 0.072, 0.066], [0.637, 0.040, 0.040],   // m n o
+  [0.658, 0.072, 0.043], [0.658, 0.043, 0.071], [0.464, 0.072, 0.000],   // p q r
+  [0.510, 0.023, 0.031], [0.445, 0.018, 0.020], [0.654, 0.066, 0.071],   // s t u
+  [0.607, 0.014, 0.014], [0.897, 0.028, 0.028], [0.598, 0.016, 0.016],   // v w x
+  [0.604, 0.014, 0.013], [0.532, 0.044, 0.027]                           // y z
+];
+function latin_metric(c) = LATIN_METRICS[ord(c) - ord("a")];
 
 function top_width(width) = 18.05 + 19.05 * (width - 1) - 5.8;   // oem 상판 폭 (mm)
 
+// text() 는 여백까지 포함한 글자 폭의 가운데에 놓이므로, 끝 글자의 여백만큼 안쪽으로 보정하고
+// LEGEND_BOLD 로 불어난 만큼 다시 되민다
 function flush_x(width, text, size, to_right) =
-  let (text_width = ADVANCE_RATIO * size * len(text),
-       offset     = top_width(width) / 2 - MARGIN - text_width / 2)
+  let (em      = size * EM_PER_SIZE,
+       advance = em * sum([for (c = text) latin_metric(c)[0]]),
+       bearing = em * (to_right ? latin_metric(text[len(text) - 1])[2]
+                                : latin_metric(text[0])[1]),
+       offset  = top_width(width) / 2 - MARGIN - advance / 2 + bearing - LEGEND_BOLD)
   (to_right ? 1 : -1) * 3.5 * offset / top_width(width);
 
 function resolve_position(align, width, text, size) =
@@ -173,16 +201,36 @@ function resolve_position(align, width, text, size) =
   align == "wl" ? [flush_x(width, text, size, false), 0.85] :
   align == "wr" ? [flush_x(width, text, size, true),  0.85] : [0, 0];
 
-// 각인 한 벌 = [글자, 위치("wl"|"wr"|[x,y]), 크기, 폰트(0=영문 1=한글)]
-function WORD(text, align = POS_CENTER, size = SIZE_WORD) = [[text, align, size, 0]];
-function ICON(text, align = POS_CENTER, size = SIZE_ICON) = [[text, align, size, 0]];
-function SYMBOL(shift, main) = [[shift, POS_TOP,    SIZE_SYMBOL, 0],
-                                [main,  POS_BOTTOM, SIZE_SYMBOL, 0]];
-function ALPHA(latin, hangul) = [[latin,  POS_BOTTOM_LEFT, SIZE_LATIN,  0],
-                                 [hangul, POS_TOP_RIGHT,   SIZE_HANGUL, 1]];
+// 각인 한 벌 = [글자, 위치("wl"|"wr"|[x,y]), 크기]
+function WORD(text, align = POS_CENTER, size = SIZE_WORD) = [[text, align, size]];
+function ICON(text, align = POS_CENTER, size = SIZE_ICON) = [[text, align, size]];
+// 작게 그려지는 기호는 키운다. 잉크의 긴 변이 2.4mm 가 되는 배율(최대 1.5)이고, 1.1 미만은 뺀다 (SKILL.md 13)
+SYMBOL_SCALE = [["`", 1.5], ["'", 1.45], ["\"", 1.25], [",", 1.3], [".", 1.5], ["-", 1.5],
+                ["^", 1.15], ["*", 1.3], ["=", 1.1], ["<", 1.1], [">", 1.1]];
+
+function symbol_size(text, size) =
+  let (hit = [for (s = SYMBOL_SCALE) if (s[0] == text) s[1]])
+  size * (len(hit) > 0 ? hit[0] : 1);
+
+function SYMBOL(shift, main) = [[shift, POS_TOP,    symbol_size(shift, SIZE_SYMBOL)],
+                                [main,  POS_BOTTOM, symbol_size(main,  SIZE_SYMBOL)]];
+function ALPHA(latin, hangul) = [[latin,  POS_BOTTOM_LEFT, SIZE_LATIN],
+                                 [hangul, POS_TOP_RIGHT,   SIZE_HANGUL]];
 function ALPHA_DOUBLE(latin, hangul, double_hangul) =
-  concat(ALPHA(latin, hangul), [[double_hangul, POS_TOP_LEFT, SIZE_HANGUL, 1]]);
-function SIDE(text) = [[text, POS_CENTER, SIZE_SIDE, 0]];
+  concat(ALPHA(latin, hangul), [[double_hangul, POS_TOP_LEFT, SIZE_HANGUL]]);
+function SIDE(text) = [[text, POS_CENTER, symbol_size(text, SIZE_SIDE)]];
+
+// caps lock 자리의 "한/A" (맥북 한글 자판). 한과 /A 는 크기가 달라 따로 놓고, / 와 A 도 나눈다 (SKILL.md 13)
+HAN_A_CENTER = [1.66, 4.42, 6.47];   // 한, /, A 의 중심 - 왼쪽 여백(MARGIN) 끝에서 잰 거리(mm). 굵히기 전 값
+
+function left_flush_x(width, offset) =
+  (offset + MARGIN - top_width(width) / 2) * 3.5 / top_width(width);
+
+// 굵히면 글자마다 사방으로 LEGEND_BOLD 만큼 커지므로, '한' 왼쪽 끝과 살 0.70 이 그대로 남게 민다
+function HAN_A(width) =
+  [["한", [left_flush_x(width, HAN_A_CENTER[0] +     LEGEND_BOLD), 0.85], SIZE_HANGUL_SYLLABLE],
+   ["/",  [left_flush_x(width, HAN_A_CENTER[1] + 3 * LEGEND_BOLD), 0.85], SIZE_WORD],
+   ["A",  [left_flush_x(width, HAN_A_CENTER[2] + 5 * LEGEND_BOLD), 0.85], SIZE_WORD]];
 
 // ---------------------------------------------------------------
 // 우측 시프트 - 스위치 2개를 캡 하나로 덮는다 (듀얼 스템)
@@ -195,7 +243,7 @@ RIGHT_SHIFT_STEMS = [[RIGHT_SHIFT_LEFT, 0],
                      [RIGHT_SHIFT_LEFT + RIGHT_SHIFT_PITCH, 0]];
 
 // -- 물림은 스템 간격 말고 여기서 푼다 (SKILL.md 9)
-RIGHT_SHIFT_INNER_SLOP = 0.20;   // 이 키만 십자 슬롯을 KeyV2 기본값으로 되돌려 헐겁게
+RIGHT_SHIFT_INNER_SLOP = 0.20;   // 두 출력 방식 공통. 필라멘트에서는 일반 높이보다 헐겁게 둔 값이다
 
 // ---------------------------------------------------------------
 // 좌측 시프트 - 스템 3개 (가운데 스위치 + 양옆 스태빌라이저)
@@ -206,7 +254,7 @@ LEFT_SHIFT_STAB_PITCH = 11.9;   // 캡 중심 -> 스태빌 스템 중심 (mm)
 LEFT_SHIFT_STEMS      = [[-LEFT_SHIFT_STAB_PITCH, 0], [0, 0], [LEFT_SHIFT_STAB_PITCH, 0]];
 
 // -- 물림은 스템 간격 말고 여기서 푼다 (SKILL.md 10)
-LEFT_SHIFT_INNER_SLOP = 0.20;   // 이 키만 십자 슬롯을 KeyV2 기본값으로 되돌려 헐겁게
+LEFT_SHIFT_INNER_SLOP = by_print_method(filament = 0.05, resin = 0.20);   // 일반 높이와 같다. 이 키만 따로 움직이려고 둔다
 
 // ---------------------------------------------------------------
 // 엄지열 2U - 스템 3개 (가운데 스위치 + 양옆 스태빌라이저)
@@ -288,29 +336,31 @@ module thumb_taper_cut(width, side, profile) {
 //   BOSL2 도형 표기와 나머지 규칙은 SKILL.md 14
 
 // -- f24 지구본 -------------------------------------------------
-GLOBE_RADIUS    = 1.6;   // 지름 3.2 = SIZE_ICON
-GLOBE_THICKNESS = 0.5;   // 외곽 선폭
+//   선폭 0.7 에서 칸 사이 살을 0.4 이상 남기려고 가운데 자오선은 뺀다 (SKILL.md 14)
+GLOBE_RADIUS         = 2.4;
+GLOBE_THICKNESS      = 0.7;            // 테·적도·자오선 띠 공통 선폭
+GLOBE_MERIDIAN_INNER = [0.30, 1.70];   // 곡선 자오선 띠의 안쪽 타원 반지름 [가로, 세로]
+GLOBE_MERIDIAN_OUTER = [1.00, 2.60];   // 바깥 타원. 세로는 테를 넘겨 테와 붙인다
 
 module globe2d() {
-  $fn = 48;
+  $fn = 64;
   ring(r = GLOBE_RADIUS, ring_width = -GLOBE_THICKNESS);   // 외곽 원
   intersection() {
     circle(GLOBE_RADIUS - GLOBE_THICKNESS / 2);
     union() {
-      rect([2 * GLOBE_RADIUS, 0.45]);                      // 적도
-      rect([0.45, 2 * GLOBE_RADIUS]);                      // 중앙 자오선
+      rect([2 * GLOBE_RADIUS, GLOBE_THICKNESS]);           // 적도
       difference() {                                       // 곡선 자오선(양쪽)
-        scale([0.55, 1]) circle(GLOBE_RADIUS - 0.22);
-        scale([0.38, 1]) circle(GLOBE_RADIUS - 0.55);
+        scale(GLOBE_MERIDIAN_OUTER) circle(1);
+        scale(GLOBE_MERIDIAN_INNER) circle(1);
       }
     }
   }
 }
 
 // f24 키 좌하단 모서리. 맥북 fn/Globe 키와 같은 자리.
-// ctrl/opt/cmd 의 POS_ICON_TOP_RIGHT [1.05, -0.88] 을 좌하단으로 뒤집은 값이다
+// 지구본이 커져 POS_ICON_TOP_RIGHT [1.05, -0.88] 을 뒤집은 자리보다 조금 안쪽이다. 여백 끝까지 0.04 / 0.03 남는다
 // (도형 좌표계는 각인 좌표계와 y 부호가 반대다)
-GLOBE_POSITION = [-top_width(1.25) / 3.5 * 1.05, -TOP_HEIGHT / 3.5 * 0.88];
+GLOBE_POSITION = [-top_width(1.25) / 3.5 * 0.98, -TOP_HEIGHT / 3.5 * 0.82];
 
 // -- 보조메뉴(우클릭) -------------------------------------------
 //   문서(가로줄 3개) + 오른쪽 아래 마우스 커서
@@ -433,10 +483,11 @@ module function_key2d(name) {
   else if (name == "f12") volume2d(3);         // 음량 높임
 }
 
-// F키 아이콘은 번호 각인(POS_BOTTOM)의 반대편인 상판 위쪽에 놓는다
-FUNCTION_KEY_POSITION = [0, TOP_HEIGHT / 3.5 * 0.85];
+// F키 아이콘은 번호 각인(POS_BOTTOM)의 반대편인 상판 위쪽에 놓는다.
+// 굵히면서 커진 가장 큰 f2(5.3mm)가 여백 안에 들도록 0.85 보다 안쪽에 둔다
+FUNCTION_KEY_POSITION = [0, TOP_HEIGHT / 3.5 * 0.75];
 
-// -- 마우스 키 (Mod 레이어 왼손, 앞면) ---------------------------
+// -- 마우스 키 (Fn2 레이어 왼손, 앞면) ---------------------------
 //   전부 같은 마우스 + 기호 두 개. 기호는 이동 = 화살표, 클릭 = 포인터 + 클릭선 (SKILL.md 14)
 MOUSE_WIDTH     = 3.0;
 MOUSE_HEIGHT    = 4.2;
@@ -510,6 +561,111 @@ module mouse_key2d(name) {
   else if (name == "mouse_down")  mouse_pair2d() rotate(270) arrow2d();
 }
 
+// -- 수정키·편집키 아이콘 ------------------------------------
+//   글꼴에 ⌃⌥⌫⌦ 가 없고 ⌘ ␣ 는 선이 0.2mm 대로 가늘어 직접 그린다 (SKILL.md 14).
+//   KEYCAP 에는 ICON_SHAPE(이름, 위치) 로 준다. 위치는 각인과 같은 좌표다
+KEY_ICON_THICKNESS = 0.7;   // 옆 소문자 단어(ctrl / opt / cmd, 굵힌 뒤 획 0.68)와 같은 굵기
+
+function ICON_SHAPE(kind, align = POS_CENTER) = [kind, align];
+
+CONTROL_SIZE = [2.80, 2.10];   // 잉크 가로 x 세로. 가로는 ⌥ 와 같게 둔다
+
+module control2d() {             // ⌃. 팔 끝은 수평으로 자른다
+  w = CONTROL_SIZE[0] / 2;
+  h = CONTROL_SIZE[1] / 2;
+  slope   = atan2(2 * h, w);
+  inner_x = w - KEY_ICON_THICKNESS / sin(slope);
+  inner_y = h - KEY_ICON_THICKNESS / cos(slope);
+  polygon([[-w, -h], [0, h], [w, -h], [inner_x, -h], [0, inner_y], [-inner_x, -h]]);
+}
+
+OPTION_SIZE    = [2.80, 2.70];
+OPTION_TOP_BAR = 1.00;   // 위쪽 가로획 둘의 길이. 사선과 오른쪽 위 가로획 사이가 0.4 떨어지는 값
+OPTION_ANGLE   = 65;     // 사선 기울기(도)
+
+module option2d() {              // ⌥
+  t = KEY_ICON_THICKNESS;
+  w = OPTION_SIZE[0] / 2;
+  h = OPTION_SIZE[1] / 2;
+  top    = -w + OPTION_TOP_BAR;    // 사선 오른쪽 위 끝
+  run    = 2 * h / tan(OPTION_ANGLE);
+  across = t / sin(OPTION_ANGLE);  // 사선의 가로 두께
+  bottom = top + run - across;     // 사선 왼쪽 아래 끝 = 아래 가로획의 시작
+  move([-w, h - t]) square([OPTION_TOP_BAR, t]);
+  move([w - OPTION_TOP_BAR, h - t]) square([OPTION_TOP_BAR, t]);
+  move([bottom, -h]) square([w - bottom, t]);
+  polygon([[top - across, h], [top, h], [top + run, -h], [bottom, -h]]);
+}
+
+COMMAND_SIZE = 4.0;   // 잉크 한 변. 고리 구멍과 가운데 칸이 0.4 가 되는 크기 = 6 x (0.4 + 선폭) / 2 + 선폭
+
+module command2d() {             // ⌘. 가운데 사각형 네 모서리에 고리
+  t = KEY_ICON_THICKNESS;
+  loop = (COMMAND_SIZE - t) / 6;   // 고리 중심선 반지름 = 가운데 사각형 반 변
+  for (sx = [-1, 1], sy = [-1, 1]) {
+    inward = atan2(-sy, -sx);      // 고리에서 이 방향 90도는 사각형 쪽이라 비운다
+    move([2 * sx * loop, 2 * sy * loop])
+      ring(r = loop + t / 2, ring_width = -t, angle = [inward + 45, inward + 315], $fn = 40);
+  }
+  for (s = [-1, 1]) {
+    back(s * loop)  rect([4 * loop, t]);
+    right(s * loop) rect([t, 4 * loop]);
+  }
+}
+
+BACKSPACE_SIZE  = [5.6, 3.2];     // X 와 테두리 사이를 0.4 띄우려면 이만큼 커야 한다
+BACKSPACE_TIP   = 1.7;            // 뾰족한 머리의 가로 길이
+BACKSPACE_CROSS = [0.64, 0.64];   // X 의 중심 x / X 위끝 중심선이 중심에서 떨어진 가로 거리
+
+module backspace2d() {           // ⌫. ⌦ 는 이것을 좌우로 뒤집는다
+  t = KEY_ICON_THICKNESS;
+  w = BACKSPACE_SIZE[0] / 2;
+  h = BACKSPACE_SIZE[1] / 2;
+  outline = [[-w, 0], [-w + BACKSPACE_TIP, h], [w, h], [w, -h], [-w + BACKSPACE_TIP, -h]];
+  difference() {
+    polygon(outline);
+    offset(delta = -t) polygon(outline);
+  }
+  intersection() {                 // X 는 테두리 안쪽에서만 그어 위아래 테두리에 붙인다
+    offset(delta = -t) polygon(outline);
+    for (s = [-1, 1])
+      right(BACKSPACE_CROSS[0]) rotate(s * atan2(h - t, BACKSPACE_CROSS[1])) rect([10, t]);
+  }
+}
+
+module delete2d() { xflip() backspace2d(); }
+
+SPACE_SIZE = [2.89, 1.94];
+
+module space2d() {               // ␣. 위가 트인 U 자
+  t = KEY_ICON_THICKNESS;
+  difference() {
+    rect(SPACE_SIZE);
+    back(t / 2 + 0.01) rect([SPACE_SIZE[0] - 2 * t, SPACE_SIZE[1] - t + 0.02]);
+  }
+}
+
+module key_icon2d(kind) {
+  if      (kind == "control")   control2d();
+  else if (kind == "option")    option2d();
+  else if (kind == "command")   command2d();
+  else if (kind == "backspace") backspace2d();
+  else if (kind == "delete")    delete2d();
+  else if (kind == "space")     space2d();
+}
+
+// 각인 위치(1칸 = 상판 폭·높이의 1/3.5)를 도형 좌표(mm)로 바꾼다. KeyV2 의 keytext() 와 같은 식
+function legend_point(align) =
+  [top_total_key_width() / 3.5 * align[0], -top_total_key_height() / 3.5 * align[1]];
+
+// -- 굵히기 ----------------------------------------------------
+//   선폭 0.45 / 0.5 로 설계한 아이콘을 키워서(scale) 살을 넓힌 뒤 윤곽을 불려(offset) 선폭 0.7 로 맞춘다.
+//   [배율 s, 불림 d] 에서 선폭 w 는 w·s + 2d, 살 g 는 g·s - 2d 가 된다. 살 0.4 가 그대로 남는 값이다 (SKILL.md 14)
+FKEY_ICON_GROW = [1.30, 0.060];   // F키 아이콘 12종: 선폭 0.45 → 0.71
+LINE_ICON_GROW = [1.23, 0.045];   // 보조메뉴 · 마우스 키: 선폭 0.5 → 0.71
+
+module grown(grow) { offset(delta = grow[1]) scale(grow[0]) children(); }
+
 // -- 도형 각인 깊이 ---------------------------------------------
 //   문자 각인($inset_legend_depth)은 minkowski 안쪽에서 잘려 실제로 더 깊게 파인다.
 //   도형은 캡을 다 만든 뒤 바깥에서 빼는 방식이라 그 보정이 없어, 여기서 직접 준다.
@@ -534,11 +690,12 @@ module front_shape_at(profile) {
           children();
 }
 
-module shape_cut(kind, profile) {
-  if      (kind == "globe") shape_at(GLOBE_POSITION, profile) globe2d();
-  else if (kind == "menu")  shape_at(MENU_POSITION,  profile) menu2d();
-  else if (starts_with(kind, "mouse_")) front_shape_at(profile) mouse_key2d(kind);
-  else                      shape_at(FUNCTION_KEY_POSITION, profile) function_key2d(kind);
+module shape_cut(shape, profile) {
+  if      (is_list(shape))   shape_at(legend_point(shape[1]), profile) key_icon2d(shape[0]);
+  else if (shape == "globe") shape_at(GLOBE_POSITION, profile) globe2d();
+  else if (shape == "menu")  shape_at([0, 0], profile) grown(LINE_ICON_GROW) move(MENU_POSITION) menu2d();
+  else if (starts_with(shape, "mouse_")) front_shape_at(profile) grown(LINE_ICON_GROW) mouse_key2d(shape);
+  else                       shape_at(FUNCTION_KEY_POSITION, profile) grown(FKEY_ICON_GROW) function_key2d(shape);
 }
 
 // ---------------------------------------------------------------
@@ -594,7 +751,8 @@ module standard_profile_settings(row) {
   $inset_legend_depth = 1.0;
   $stem_inset         = OEM_STEM_INSET;
   $total_depth        = OEM_ROW_DEPTH[row];
-  $top_tilt           = OEM_ROW_TILT[row];
+  // reverse_tilt 키는 기울기 부호만 뒤집는다. 깊이는 행 값 그대로라 이웃 키와 높이가 맞는다 (SKILL.md 16)
+  $top_tilt           = OEM_ROW_TILT[row] * ($reverse_tilt ? -1 : 1);
   children();
 }
 
@@ -616,8 +774,8 @@ module key_body(profile, width) {
 // ---------------------------------------------------------------
 function KEYCAP(width = 1, top = [], side = [], stems = undef, shape = undef,
                 profile = undef, homing = false, choc2 = false,
-                taper = 0, inner_slop = undef) =
-  [width, top, side, stems, shape, profile, homing, choc2, taper, inner_slop];
+                taper = 0, inner_slop = undef, reverse_tilt = false) =
+  [width, top, side, stems, shape, profile, homing, choc2, taper, inner_slop, reverse_tilt];
 
 function GAP(width = 1) = KEYCAP(width, undef);   // 스위치 없는 자리. 폭만 차지한다
 function cap_width(key) = key[0];
@@ -638,6 +796,8 @@ module cap(key, base_profile) {
   // 서포트/스템 여유는 호출 시점 스코프에서 정해야 확실히 먹는다
   // (settings.scad 가 top-level 값을 덮어쓴다)
   $stem_support_type = STEM_SUPPORT;
+  $legend_bold       = LEGEND_BOLD;   // KeyV2 keytext() 가 읽는다 (SKILL.md 1)
+  $reverse_tilt      = key[10] == true;   // standard_profile_settings() 가 읽는다
   // Choc v2 는 기둥을 원통으로 깎으므로, 깎기 전 사각 기둥이 원통보다 커야 한다.
   // 최종 바깥 치수는 CHOC2_BOSS_DIAMETER 가 정하니 이 값은 헐거움에 영향을 주지 않는다
   $stem_slop       = choc2 ? CHOC2_SLOP :
@@ -646,11 +806,9 @@ module cap(key, base_profile) {
                      (profile == -1) ? LOW_PROFILE_STEM_INNER_SLOP
                                     : STANDARD_STEM_INNER_SLOP;
   $legends = [for (legend = top_legends)
-    [legend[0], resolve_position(legend[1], width, legend[0], legend[2]), legend[2],
-     legend[3] == 1 ? FONT_HANGUL : FONT_ENGLISH]];
+    [legend[0], resolve_position(legend[1], width, legend[0], legend[2]), legend[2], FONT]];
   $front_legends = [for (legend = side_legends)
-    [legend[0], resolve_position(legend[1], width, legend[0], legend[2]), legend[2],
-     FONT_ENGLISH]];
+    [legend[0], resolve_position(legend[1], width, legend[0], legend[2]), legend[2], FONT]];
   $stem_positions = stems;
 
   union() {
@@ -669,12 +827,12 @@ module cap(key, base_profile) {
 
 // ---------------------------------------------------------------
 // 키 배열. 행 = [기본프로파일(-1=저프로파일, 0~4=oem행), [키...]]
-//   측면 각인 = Mod 레이어. 오른손 넘패드 / 왼손 마우스 (SKILL.md 13)
+//   측면 각인 = Fn2 레이어. 오른손 넘패드 / 왼손 마우스 (SKILL.md 13)
 // ---------------------------------------------------------------
 
 // 윗줄 F행. 저프로파일은 FUNCTION_ROW_LOW 키뿐이고 나머지는 일반 높이다 (SKILL.md 2)
 FUNCTION_ROW_LOW = ["f1", "f3", "f11", "eject", "f13"];
-FUNCTION_ROW_LOW_INNER_SLOP = 0.35;   // 이 줄만 십자 슬롯을 넓힌다 (SKILL.md 7)
+FUNCTION_ROW_LOW_INNER_SLOP = by_print_method(filament = 0.20, resin = 0.35);   // 레진에서는 이 줄만 십자 슬롯을 넓힌다 (SKILL.md 7)
 
 function is_low_key(name) = len([for (n = FUNCTION_ROW_LOW) if (n == name) 1]) > 0;
 
@@ -682,7 +840,7 @@ function function_profile(name) = is_low_key(name) ? -1 : undef;
 
 function function_inner_slop(name) = is_low_key(name) ? FUNCTION_ROW_LOW_INNER_SLOP : undef;
 
-// sides = 앞에서부터 키마다 측면(Mod) 각인. 모자라면 나머지 키는 측면 없음
+// sides = 앞에서부터 키마다 측면(Fn2) 각인. 모자라면 나머지 키는 측면 없음
 function function_row(names, sides = []) =
   [for (i = idx(names))
      KEYCAP(1, WORD(names[i], POS_BOTTOM), i < len(sides) ? sides[i] : [],
@@ -720,7 +878,7 @@ LEFT_ROW_3 = [1, [ KEYCAP(1.5, WORD("tab", "wl")),
                    KEYCAP(1, ALPHA_DOUBLE("R", "ㄱ", "ㄲ")),
                    KEYCAP(1, ALPHA_DOUBLE("T", "ㅅ", "ㅆ")) ]];
 
-LEFT_ROW_4 = [2, [ KEYCAP(1.75, WORD("caps lock", "wl")),
+LEFT_ROW_4 = [2, [ KEYCAP(1.75, HAN_A(1.75)),
                    KEYCAP(1, ALPHA("A", "ㅁ"), shape = "mouse_left"),
                    KEYCAP(1, ALPHA("S", "ㄴ"), shape = "mouse_click"),
                    KEYCAP(1, ALPHA("D", "ㅇ"), shape = "mouse_right"),
@@ -736,22 +894,28 @@ LEFT_ROW_5 = [3, [ KEYCAP(2.25, WORD("shift", "wl"), stems = LEFT_SHIFT_STEMS,
                    KEYCAP(1, ALPHA("V", "ㅍ")),
                    KEYCAP(1, ALPHA("B", "ㅠ")) ]];
 
+// 엄지로 누르는 아랫줄 키 3개(오른손 스페이스 둘, 왼손 cmd). 뒤가 높은 판을 배열에 쓰고,
+// 원래 기울기 판은 대체 캡 행(LEFT_ROW_ALT / RIGHT_ROW_ALT)에 둔다 (SKILL.md 16)
+function THUMB_SPACE(reverse_tilt) =
+  KEYCAP(1.5, shape = ICON_SHAPE("space"), reverse_tilt = reverse_tilt);
+function THUMB_CMD(reverse_tilt) =
+  KEYCAP(1.5, WORD("cmd", "wl"),   // command 는 이 칸에 안 들어간다 (SKILL.md 13)
+         shape = ICON_SHAPE("command", POS_ICON_TOP_RIGHT), reverse_tilt = reverse_tilt);
+
 LEFT_ROW_6 = [4, [ KEYCAP(1.25, ICON("fn", POS_ICON_TOP_RIGHT), shape = "globe"),
-                   KEYCAP(1.25, concat(ICON("⌃", POS_ICON_TOP_RIGHT),
-                                       WORD("ctrl", "wl"))),
-                   KEYCAP(1.25, concat(ICON("⌥", POS_ICON_TOP_RIGHT),
-                                       WORD("opt", "wl"))),
+                   KEYCAP(1.25, WORD("ctrl", "wl"),
+                          shape = ICON_SHAPE("control", POS_ICON_TOP_RIGHT)),
+                   KEYCAP(1.25, WORD("opt", "wl"),
+                          shape = ICON_SHAPE("option", POS_ICON_TOP_RIGHT)),
                    GAP(1.5),
-                   KEYCAP(1.5, concat(ICON("⌘", POS_ICON_TOP_RIGHT),
-                                      WORD("command", "wl"))) ]];
+                   THUMB_CMD(true) ]];
 
 // 엄지열 - 저프로파일. 행 기본값 4 를 무시하도록 키마다 profile = -1 로 덮어쓴다
 //   2U 는 스템 3개 (스위치 + 스태빌 2), 사다리꼴. 1U 는 중앙 1개, 직사각형
 //   왼손 2U 는 사다리꼴이 왼쪽이라 taper = -1. 스템은 곧은 변(오른쪽)으로 치우친다
-LEFT_ROW_7 = [4, [ KEYCAP(THUMB_2U_WIDTH, WORD("mod"), stems = THUMB_2U_STEMS_LEFT,
+LEFT_ROW_7 = [4, [ KEYCAP(THUMB_2U_WIDTH, WORD("fn2"), stems = THUMB_2U_STEMS_LEFT,
                           profile = -1, choc2 = true, taper = -1),
-                   KEYCAP(1, ICON("␣", POS_CENTER, SIZE_SPACE),
-                          profile = -1, choc2 = true) ]];
+                   KEYCAP(1, shape = ICON_SHAPE("space"), profile = -1, choc2 = true) ]];
 
 // -- 오른쪽 ----------------------------------------------------
 RIGHT_ROW_1 = [0, function_row_right()];
@@ -762,8 +926,7 @@ RIGHT_ROW_2 = [0, [ KEYCAP(1, SYMBOL("&", "7"), SIDE("7")),
                     KEYCAP(1, SYMBOL(")", "0"), SIDE("-")),
                     KEYCAP(1, SYMBOL("_", "-")),
                     KEYCAP(1, SYMBOL("+", "=")),
-                    KEYCAP(1.5, ICON("⌫", POS_CENTER,
-                                     SIZE_BACKSPACE_DELETE)),   // backspace
+                    KEYCAP(1.5, shape = ICON_SHAPE("backspace")),
                     GAP(1),
                     KEYCAP(1, shape = "menu") ]];                // 보조메뉴(우클릭)
 
@@ -776,8 +939,7 @@ RIGHT_ROW_3 = [1, [ KEYCAP(1, ALPHA("Y", "ㅛ")),
                     KEYCAP(1, SYMBOL("}", "]")),
                     KEYCAP(1, SYMBOL("|", "\\")),
                     GAP(1),
-                    KEYCAP(1, ICON("⌦", POS_CENTER,
-                                   SIZE_BACKSPACE_DELETE)) ]];   // delete (forward)
+                    KEYCAP(1, shape = ICON_SHAPE("delete")) ]];
 
 RIGHT_ROW_4 = [2, [ KEYCAP(1, ALPHA("H", "ㅗ")),
                     KEYCAP(1, ALPHA("J", "ㅓ"), SIDE("1"), homing = true),
@@ -799,12 +961,12 @@ RIGHT_ROW_5 = [3, [ KEYCAP(1, ALPHA("N", "ㅜ")),
                     KEYCAP(1, ICON("▲", POS_CENTER, SIZE_ARROW)),
                     GAP(1) ]];
 
-RIGHT_ROW_6 = [4, [ KEYCAP(1.5, ICON("␣", POS_CENTER, SIZE_SPACE)),
-                    KEYCAP(1.5, ICON("␣", POS_CENTER, SIZE_SPACE)),
-                    KEYCAP(1.25, concat(ICON("⌘", POS_ICON_TOP_LEFT),
-                                        WORD("cmd", "wr"))),
-                    KEYCAP(1.25, concat(ICON("⌥", POS_ICON_TOP_LEFT),
-                                        WORD("opt", "wr"))),
+RIGHT_ROW_6 = [4, [ THUMB_SPACE(true),
+                    THUMB_SPACE(true),
+                    KEYCAP(1.25, WORD("cmd", "wr"),
+                           shape = ICON_SHAPE("command", POS_ICON_TOP_LEFT)),
+                    KEYCAP(1.25, WORD("opt", "wr"),
+                           shape = ICON_SHAPE("option", POS_ICON_TOP_LEFT)),
                     GAP(1.25),
                     KEYCAP(1, ICON("◀", POS_CENTER, SIZE_ARROW)),
                     KEYCAP(1, ICON("▼", POS_CENTER, SIZE_ARROW)),
@@ -813,16 +975,20 @@ RIGHT_ROW_6 = [4, [ KEYCAP(1.5, ICON("␣", POS_CENTER, SIZE_SPACE)),
 // 엄지열 - 저프로파일
 //   2U 는 스템 3개 (스위치 + 스태빌 2), 사다리꼴. 1U 는 중앙 1개, 직사각형
 //   오른손 2U 는 사다리꼴이 오른쪽이라 taper = +1. 스템은 곧은 변(왼쪽)으로 치우친다
-RIGHT_ROW_7 = [4, [ KEYCAP(1, ICON("␣", POS_CENTER, SIZE_SPACE),
-                           profile = -1, choc2 = true),
-                    KEYCAP(THUMB_2U_WIDTH, ICON("␣", POS_CENTER, SIZE_SPACE),
+RIGHT_ROW_7 = [4, [ KEYCAP(1, shape = ICON_SHAPE("space"), profile = -1, choc2 = true),
+                    KEYCAP(THUMB_2U_WIDTH, shape = ICON_SHAPE("space"),
                            stems = THUMB_2U_STEMS_RIGHT, profile = -1, choc2 = true,
                            taper = 1) ]];
 
+// 대체 캡 행 - 엄지로 누르는 키 3개의 원래 기울기 판(아랫줄 그대로 앞이 높다).
+//   열 번호를 6행과 맞추려고 대체가 없는 자리는 GAP 으로 채운다. 행 번호를 직접 적어야 뽑힌다 (SKILL.md 5)
+LEFT_ROW_ALT  = [4, [ GAP(1.25), GAP(1.25), GAP(1.25), GAP(1.5), THUMB_CMD(false) ]];
+RIGHT_ROW_ALT = [4, [ THUMB_SPACE(false), THUMB_SPACE(false) ]];
+
 LEFT_HALF  = [LEFT_ROW_1, LEFT_ROW_2, LEFT_ROW_3, LEFT_ROW_4, LEFT_ROW_5,
-              LEFT_ROW_6, LEFT_ROW_7];
+              LEFT_ROW_6, LEFT_ROW_7, LEFT_ROW_ALT];
 RIGHT_HALF = [RIGHT_ROW_1, RIGHT_ROW_2, RIGHT_ROW_3, RIGHT_ROW_4,
-              RIGHT_ROW_5, RIGHT_ROW_6, RIGHT_ROW_7];
+              RIGHT_ROW_5, RIGHT_ROW_6, RIGHT_ROW_7, RIGHT_ROW_ALT];
 
 // ---------------------------------------------------------------
 // 배치 / 생성
@@ -832,10 +998,12 @@ RIGHT_HALF = [RIGHT_ROW_1, RIGHT_ROW_2, RIGHT_ROW_3, RIGHT_ROW_4,
 function axis_match(want, got) =
   is_undef(want) || want == "-1" || want == got;
 
+MAIN_ROW_COUNT = 7;   // "0"~"6" = 키보드 7행. 그 뒤 행(대체 캡)은 행 "-1" 에 걸리지 않는다
+
 function selected(hand, r, i) =
   len([for (k = RENDER)
          if (axis_match(k[0], hand) &&
-             axis_match(k[1], str(r)) &&
+             (r < MAIN_ROW_COUNT ? axis_match(k[1], str(r)) : k[1] == str(r)) &&
              axis_match(k[2], str(i))) 1]) > 0;
 
 // ---------------------------------------------------------------
