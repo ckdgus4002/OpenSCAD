@@ -739,20 +739,26 @@ OEM_ROW_DEPTH = [11.12, 9.24, 8.52, 8.82, 9.82];
 //   기울기를 바꾸면 앞모서리 높이도 따라 바뀌므로 depth 를 다시 맞춰야 한다
 OEM_ROW_TILT = [-2.65, 1.50, 4.50, 9.87, 18.08];
 
+// 엄지로 누르는 아랫줄 키 3개(reverse_tilt)의 깊이·기울기. 뒤가 높아 기울기가 음수다.
+//   뒤모서리 9.40 (5행(ZXCV) 앞모서리보다 0.5mm 아래), 앞모서리 7.95 (원래 판(대체 캡 행)을 180도 돌렸을 때와 같다).
+//   두 값은 한 쌍이라 하나만 바꾸면 두 모서리가 같이 움직인다. 다른 목표의 값은 SKILL.md 16
+BOTTOM_ROW_THUMB_DEPTH = 8.66;
+BOTTOM_ROW_THUMB_TILT  = -6.73;
+
 // ---------------------------------------------------------------
 // [OEM 캡 높이 - $stem_inset]
 // ---------------------------------------------------------------
 //   완성 높이 = $total_depth - $stem_inset.
-//   높이 손잡이는 OEM_ROW_DEPTH 하나다 (SKILL.md 16)
+//   높이 손잡이는 OEM_ROW_DEPTH 와 BOTTOM_ROW_THUMB_DEPTH 뿐이다 (SKILL.md 16)
 OEM_STEM_INSET = 0;   // KeyV2 원본은 1.2. 0 = 캡이 그만큼 올라오고 치마가 길어진다
 
 module standard_profile_settings(row) {
   $keytop_thickness   = 1.5;
   $inset_legend_depth = 1.0;
   $stem_inset         = OEM_STEM_INSET;
-  $total_depth        = OEM_ROW_DEPTH[row];
-  // reverse_tilt 키는 기울기 부호만 뒤집는다. 깊이는 행 값 그대로라 이웃 키와 높이가 맞는다 (SKILL.md 16)
-  $top_tilt           = OEM_ROW_TILT[row] * ($reverse_tilt ? -1 : 1);
+  // reverse_tilt 키 = 엄지로 누르는 아랫줄 키 3개 (SKILL.md 16)
+  $total_depth        = $reverse_tilt ? BOTTOM_ROW_THUMB_DEPTH : OEM_ROW_DEPTH[row];
+  $top_tilt           = $reverse_tilt ? BOTTOM_ROW_THUMB_TILT  : OEM_ROW_TILT[row];
   children();
 }
 
