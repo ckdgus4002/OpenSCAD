@@ -25,10 +25,44 @@ module shape(thickness_difference, depth_difference=0){
 }
 
 module rounded_shape() {
-  color($primary_color) minkowski(){
-    // half minkowski in the z direction
-    shape($minkowski_radius * 2, $minkowski_radius/2);
-    minkowski_object();
+  // UHK80 로컬 수정: 딥이 파인 캡은 오목해서 통째로 minkowski 하면 볼록 분해를 거치느라 캡 하나가 15분을 넘겨도 안 끝난다.
+  // 볼록 조각(dish_slab)으로 나눠 조각마다 minkowski 하고 합친다. minkowski 는 합집합에 나눠 걸 수 있다
+  if ($dish_type == "cylindrical" && !$inverted_dish) {
+    color($primary_color) for (slab = [-1 : DISH_SLABS]) minkowski() {
+      dish_slab($minkowski_radius * 2, $minkowski_radius/2, slab);
+      minkowski_object();
+    }
+  } else {
+    color($primary_color) minkowski(){
+      // half minkowski in the z direction
+      shape($minkowski_radius * 2, $minkowski_radius/2);
+      minkowski_object();
+    }
+  }
+}
+
+// UHK80 로컬 수정: 상판 폭을 이 칸 수로 나눠 칸마다 딥 원호를 현(평면 하나)으로 바꾼다.
+// 원호와 현의 차이는 $dish_depth / DISH_SLABS^2 (24 칸, 딥 1mm 면 0.002mm). 키 폭과 무관하다
+DISH_SLABS = 24;
+
+// UHK80 로컬 수정: shape() 를 세로 판으로 자른 볼록 조각 하나. slab = 0 ~ DISH_SLABS-1 은 딥 칸,
+// -1 / DISH_SLABS 는 상판 폭 바깥 왼쪽 / 오른쪽 (딥이 닿지 않는다)
+module dish_slab(thickness_difference, depth_difference, slab) {
+  width = top_total_key_width() + $dish_overdraw_width;
+  chord = (pow(width, 2) - 4 * pow($dish_depth, 2)) / (8 * $dish_depth);
+  rad   = (pow(width, 2) + 4 * pow($dish_depth, 2)) / (8 * $dish_depth);
+  step  = width / DISH_SLABS;
+  inside = slab >= 0 && slab < DISH_SLABS;
+  x0 = slab < 0 ? -500 : -width / 2 + step * slab;
+  x1 = slab >= DISH_SLABS ? 500 : -width / 2 + step * (slab + 1);
+  z0 = inside ? chord - sqrt(pow(rad, 2) - pow(x0, 2)) : 400;
+  z1 = inside ? chord - sqrt(pow(rad, 2) - pow(x1, 2)) : 400;
+  intersection() {
+    shape_hull(thickness_difference, depth_difference, 0);
+    envelope(depth_difference, $stem_inset);
+    top_placement(depth_difference) translate([$dish_offset_x + x0, -500, -500]) cube([x1 - x0, 1000, 1000]);
+    top_placement(depth_difference) translate([$dish_offset_x + x0, 0, z0])
+      rotate([0, -atan2(z1 - z0, x1 - x0), 0]) translate([-500, -500, -1000]) cube(1000);
   }
 }
 

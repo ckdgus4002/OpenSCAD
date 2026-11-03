@@ -20,10 +20,6 @@ function KEY(hand, row, col) = [hand, row, col];
 // 뽑을 키 목록 (한 줄에 하나)
 RENDER = [
   KEY("-1", "-1", "-1"),
-  // KEY("L", "3", "0"),
-  // KEY("L", "4", "0"),
-  // KEY("R", "5", "1"),
-  // KEY("R", "5", "7"),
 ];
 
 // [프린트 베드] 가로 폭만 쓴다. 세로는 넘치면 그냥 줄이 늘어날 뿐이라 안 본다
@@ -66,7 +62,9 @@ module homing_bar() {
 // 바 윗면을 상판 곡면과 평행하게 자른다.
 // 원기둥 딥을 HOMING_HEIGHT 만큼 들어올린 것을 빼면 된다
 // (top_of_key() 좌표계에서 상판 곡면은 z = 딥곡면 + $dish_depth 이다)
+// 라운딩을 켜면 상판 곡면은 반지름이 r 줄고 r/2 올라온다 (SKILL.md 15)
 module homing_top_cut() {
+  r = $rounded_key ? $minkowski_radius : 0;
   if ($dish_type == "cylindrical") {
     w     = top_total_key_width() + $dish_overdraw_width;
     d     = $dish_depth;
@@ -74,10 +72,10 @@ module homing_top_cut() {
     rad   = (pow(w, 2) + 4 * pow(d, 2)) / (8 * d);
     // $fa/$fs 를 여기서 못 박는다. 반지름이 커서(1U 기준 약 19mm) 분할이 거칠면
     // 자른 면이 실제 원호보다 위로 떠서 바가 0.03mm 쯤 높아진다
-    translate([0, 0, chord + d + HOMING_HEIGHT])
-      rotate([90, 0, 0]) cylinder(h = 400, r = rad, center = true, $fa = 0.5, $fs = 0.1);
+    translate([0, 0, chord + d - r / 2 + HOMING_HEIGHT])
+      rotate([90, 0, 0]) cylinder(h = 400, r = rad - r, center = true, $fa = 0.5, $fs = 0.1);
   } else {
-    translate([-200, -200, HOMING_HEIGHT]) cube([400, 400, 200]);
+    translate([-200, -200, r / 2 + HOMING_HEIGHT]) cube([400, 400, 200]);
   }
 }
 
@@ -721,14 +719,14 @@ module low_profile_settings() {
 //   상판 1.5mm / 각인 1.0mm.
 //   행별 값은 $total_depth 이고, 실제로 재는 높이와 다르다.
 //   기준은 '상판 앞모서리(하단) 높이' 다. 캡 바닥에서 상판 앞쪽 모서리까지.
-//   행마다 틸트가 달라 보정치가 일정하지 않고, 아래 OEM_ROW_TILT 를 고치면 보정치도 바뀐다.
+//   행마다 틸트가 달라 보정치가 일정하지 않고, 아래 OEM_ROW_TILT 나 OEM_MINKOWSKI 를 고치면 보정치도 바뀐다.
 //   지금 값 기준 렌더 실측 (앞모서리 − $total_depth):
-//     row 0 -0.270 / row 1 +0.155 / row 2 +0.480 / row 3 +1.080 / row 4 +1.996
+//     row 0 -0.234 / row 1 +0.197 / row 2 +0.519 / row 3 +1.111 / row 4 +2.022
 //   넣을 값 = 순정 앞모서리 실측 − 그 행의 보정치 (SKILL.md 16)
 //   oem_row 는 위에서 아래로 0~4. 그 번호를 그대로 인덱스로 쓴다.
 //   저프로파일 표식은 -1 이라 0 이 비지 않는다.
 //   행 번호 근거는 SKILL.md 16
-OEM_ROW_DEPTH = [11.12, 9.24, 8.52, 8.82, 9.82];
+OEM_ROW_DEPTH = [11.08, 9.20, 8.48, 8.79, 9.80];
 //               ^0     ^1    ^2    ^3    ^4
 //             숫자열/F행 QWERTY 홈행 ZXCV 아랫줄
 
@@ -737,13 +735,18 @@ OEM_ROW_DEPTH = [11.12, 9.24, 8.52, 8.82, 9.82];
 //   순정 캡의 앞모서리-뒤모서리 차이를 재서 역산한 값이다 (실측값은 SKILL.md 19).
 //   1도당 앞뒤 차이 약 0.205mm. 이 값과 OEM_ROW_DEPTH 는 같이 움직인다 -
 //   기울기를 바꾸면 앞모서리 높이도 따라 바뀌므로 depth 를 다시 맞춰야 한다
-OEM_ROW_TILT = [-2.65, 1.50, 4.50, 9.87, 18.08];
+OEM_ROW_TILT = [-2.72, 1.55, 4.61, 10.09, 18.42];
 
 // 엄지로 누르는 아랫줄 키 3개(reverse_tilt)의 깊이·기울기. 뒤가 높아 기울기가 음수다.
-//   뒤모서리 9.40 (5행(ZXCV) 앞모서리보다 0.5mm 아래), 앞모서리 7.95 (원래 판(대체 캡 행)을 180도 돌렸을 때와 같다).
+//   뒤모서리 9.40 (5행(ZXCV) 앞모서리보다 0.5mm 아래), 앞모서리 7.97 (원래 판(대체 캡 행)을 180도 돌렸을 때와 같다).
 //   두 값은 한 쌍이라 하나만 바꾸면 두 모서리가 같이 움직인다. 다른 목표의 값은 SKILL.md 16
-BOTTOM_ROW_THUMB_DEPTH = 8.66;
-BOTTOM_ROW_THUMB_TILT  = -6.73;
+BOTTOM_ROW_THUMB_DEPTH = 8.61;
+BOTTOM_ROW_THUMB_TILT  = -6.77;
+
+// 상판 모서리 라운딩 반지름(mm). 저프로파일(LOW_PROFILE_MINKOWSKI)과 같은 KeyV2 minkowski 라운딩이다.
+//   라운딩은 상판을 올리고 모서리를 깎아 앞/뒤 모서리 높이를 바꾼다. 위 OEM_ROW_DEPTH / OEM_ROW_TILT /
+//   BOTTOM_ROW_THUMB_* 는 이 값에서 순정 실측에 맞춘 값이라, 이 값을 바꾸면 다시 맞춰야 한다 (SKILL.md 16)
+OEM_MINKOWSKI = 0.2;
 
 // ---------------------------------------------------------------
 // [OEM 캡 높이 - $stem_inset]
@@ -754,8 +757,10 @@ OEM_STEM_INSET = 0;   // KeyV2 원본은 1.2. 0 = 캡이 그만큼 올라오고 
 
 module standard_profile_settings(row) {
   $keytop_thickness   = 1.5;
-  $inset_legend_depth = 1.0;
+  $inset_legend_depth = 1.0;   // 라운딩으로 표면이 약 0.10 올라와 그만큼 더 깊게 파인다. 아래 남는 0.5mm 는 그대로
   $stem_inset         = OEM_STEM_INSET;
+  $rounded_key        = OEM_MINKOWSKI > 0;
+  $minkowski_radius   = OEM_MINKOWSKI;
   // reverse_tilt 키 = 엄지로 누르는 아랫줄 키 3개 (SKILL.md 16)
   $total_depth        = $reverse_tilt ? BOTTOM_ROW_THUMB_DEPTH : OEM_ROW_DEPTH[row];
   $top_tilt           = $reverse_tilt ? BOTTOM_ROW_THUMB_TILT  : OEM_ROW_TILT[row];
