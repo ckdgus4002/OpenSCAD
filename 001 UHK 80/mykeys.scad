@@ -19,7 +19,14 @@ function KEY(hand, row, col) = [hand, row, col];
 
 // 뽑을 키 목록 (한 줄에 하나)
 RENDER = [
-  KEY("-1", "-1", "-1"),
+  KEY("L", "4", "0"),
+  KEY("L", "0", "1"),
+  KEY("L", "0", "3"),
+  KEY("R", "0", "4"),
+  KEY("R", "0", "6"),
+  KEY("R", "0", "8"),
+  KEY("L", "1", "1"),
+  KEY("R", "2", "4"),
 ];
 
 // [프린트 베드] 가로 폭만 쓴다. 세로는 넘치면 그냥 줄이 늘어날 뿐이라 안 본다
@@ -32,7 +39,7 @@ PACK_PITCH_Y = 21.0;            // 줄 간격 = 키 세로(약 18) + 앞뒤 여�
 // 스템 서포트: "tines" | "disable"
 STEM_SUPPORT = "disable";
 
-// 출력 방식: "resin" | "filament". 스템 십자 여유 일부가 이 값을 따른다 (SKILL.md 7)
+// 출력 방식: "resin" | "filament". 스템 여유 일부가 이 값을 따른다 (SKILL.md 7)
 PRINT_METHOD = "resin";
 
 // ---------------------------------------------------------------
@@ -86,11 +93,13 @@ module homing_top_cut() {
 //   출력 방식(PRINT_METHOD)마다 다른 값은 by_print_method() 로 둔다. 슬롭 표와 근거는 SKILL.md 7
 function by_print_method(filament, resin) = PRINT_METHOD == "filament" ? filament : resin;
 
-LOW_PROFILE_STEM_SLOP       = 0.45;   // 저프로파일: 바깥 기둥만 줄인다
+// 윗줄 저프로파일(오테뮤)은 바깥 기둥만 줄인다. 레진은 0.45 에서도 눌린 채 안 올라왔다
+LOW_PROFILE_STEM_SLOP       = by_print_method(filament = 0.45, resin = 0.55);
 LOW_PROFILE_STEM_INNER_SLOP = 0.20;   // 안쪽은 그대로. 윗줄은 FUNCTION_ROW_LOW_INNER_SLOP 를 쓴다
-STANDARD_STEM_SLOP          = 0.35;   // 일반 높이: 바깥은 그대로
-// 필라멘트는 0.20 이 헐거워 좁혔고, 레진은 0.05 에서 스템이 부러졌다
-STANDARD_STEM_INNER_SLOP    = by_print_method(filament = 0.05, resin = 0.20);
+// 일반 높이 바깥 기둥. 레진은 0.35 에서 눌린 채 잘 안 올라왔다
+STANDARD_STEM_SLOP          = by_print_method(filament = 0.35, resin = 0.45);
+// 필라멘트는 0.20 이 헐거워 좁혔고, 레진은 0.05 에서 스템이 부러지고 0.20 에서는 가끔 안 꽂혔다
+STANDARD_STEM_INNER_SLOP    = by_print_method(filament = 0.05, resin = 0.30);
 
 // ---------------------------------------------------------------
 // [Choc v2 원통 기둥 - 엄지열 전용]
@@ -241,7 +250,7 @@ RIGHT_SHIFT_STEMS = [[RIGHT_SHIFT_LEFT, 0],
                      [RIGHT_SHIFT_LEFT + RIGHT_SHIFT_PITCH, 0]];
 
 // -- 물림은 스템 간격 말고 여기서 푼다 (SKILL.md 9)
-RIGHT_SHIFT_INNER_SLOP = 0.20;   // 두 출력 방식 공통. 필라멘트에서는 일반 높이보다 헐겁게 둔 값이다
+RIGHT_SHIFT_INNER_SLOP = by_print_method(filament = 0.20, resin = 0.30);   // 필라멘트는 일반 높이보다 헐겁게, 레진은 일반 높이와 같게 둔다
 
 // ---------------------------------------------------------------
 // 좌측 시프트 - 스템 3개 (가운데 스위치 + 양옆 스태빌라이저)
@@ -252,7 +261,9 @@ LEFT_SHIFT_STAB_PITCH = 11.9;   // 캡 중심 -> 스태빌 스템 중심 (mm)
 LEFT_SHIFT_STEMS      = [[-LEFT_SHIFT_STAB_PITCH, 0], [0, 0], [LEFT_SHIFT_STAB_PITCH, 0]];
 
 // -- 물림은 스템 간격 말고 여기서 푼다 (SKILL.md 10)
-LEFT_SHIFT_INNER_SLOP = by_print_method(filament = 0.05, resin = 0.20);   // 일반 높이와 같다. 이 키만 따로 움직이려고 둔다
+LEFT_SHIFT_INNER_SLOP = by_print_method(filament = 0.05, resin = 0.30);   // 일반 높이와 같다. 이 키만 따로 움직이려고 둔다
+// 바깥 기둥. 레진에서 0.35 로는 눌린 채 안 올라와 일반 높이보다 한 단계 더 줄였다 (SKILL.md 10)
+LEFT_SHIFT_STEM_SLOP  = by_print_method(filament = 0.35, resin = 0.55);
 
 // ---------------------------------------------------------------
 // 엄지열 2U - 스템 3개 (가운데 스위치 + 양옆 스태빌라이저)
@@ -785,8 +796,9 @@ module key_body(profile, width) {
 // ---------------------------------------------------------------
 function KEYCAP(width = 1, top = [], side = [], stems = undef, shape = undef,
                 profile = undef, homing = false, choc2 = false,
-                taper = 0, inner_slop = undef, reverse_tilt = false) =
-  [width, top, side, stems, shape, profile, homing, choc2, taper, inner_slop, reverse_tilt];
+                taper = 0, inner_slop = undef, reverse_tilt = false, outer_slop = undef) =
+  [width, top, side, stems, shape, profile, homing, choc2, taper, inner_slop, reverse_tilt,
+   outer_slop];
 
 function GAP(width = 1) = KEYCAP(width, undef);   // 스위치 없는 자리. 폭만 차지한다
 function cap_width(key) = key[0];
@@ -803,6 +815,7 @@ module cap(key, base_profile) {
   choc2        = key[7];
   taper        = is_undef(key[8]) ? 0 : key[8];
   inner_slop   = key[9];
+  outer_slop   = key[11];
 
   // 서포트/스템 여유는 호출 시점 스코프에서 정해야 확실히 먹는다
   // (settings.scad 가 top-level 값을 덮어쓴다)
@@ -812,6 +825,7 @@ module cap(key, base_profile) {
   // Choc v2 는 기둥을 원통으로 깎으므로, 깎기 전 사각 기둥이 원통보다 커야 한다.
   // 최종 바깥 치수는 CHOC2_BOSS_DIAMETER 가 정하니 이 값은 헐거움에 영향을 주지 않는다
   $stem_slop       = choc2 ? CHOC2_SLOP :
+                     !is_undef(outer_slop) ? outer_slop :
                      (profile == -1) ? LOW_PROFILE_STEM_SLOP : STANDARD_STEM_SLOP;
   $stem_inner_slop = !is_undef(inner_slop) ? inner_slop :
                      (profile == -1) ? LOW_PROFILE_STEM_INNER_SLOP
@@ -898,7 +912,8 @@ LEFT_ROW_4 = [2, [ KEYCAP(1.75, HAN_A(1.75)),
 
 // 좌측 시프트: 2.25U 한 칸 = 스위치 1개 + 양옆 스태빌라이저 -> 스템 3개
 LEFT_ROW_5 = [3, [ KEYCAP(2.25, WORD("shift", "wl"), stems = LEFT_SHIFT_STEMS,
-                          inner_slop = LEFT_SHIFT_INNER_SLOP),
+                          inner_slop = LEFT_SHIFT_INNER_SLOP,
+                          outer_slop = LEFT_SHIFT_STEM_SLOP),
                    KEYCAP(1, ALPHA("Z", "ㅋ")),
                    KEYCAP(1, ALPHA("X", "ㅌ"), shape = "mouse_down"),
                    KEYCAP(1, ALPHA("C", "ㅊ")),
