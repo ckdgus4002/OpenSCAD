@@ -33,11 +33,12 @@ RENDER = [
   KEY("L", "0", "0"),
   KEY("R", "1", "6"),
   KEY("L", "1", "0"),
-  KEY("R", "2", "9"),
   KEY("R", "1", "4"),
   KEY("R", "5", "2"),
   KEY("L", "6", "0"),
   KEY("R", "6", "1"),
+  KEY("L", "3", "0"),
+  KEY("R", "1", "8"),
 ];
 
 // [프린트 베드] 가로 폭만 쓴다. 세로는 넘치면 그냥 줄이 늘어날 뿐이라 안 본다
@@ -162,7 +163,6 @@ LEGEND_BOLD = 0.05;
 SIZE_WORD             = 3.2;
 SIZE_LATIN            = 3.2;
 SIZE_HANGUL           = 3.7;   // 낱자. 이 글꼴은 낱자를 작게 그려, 획이 영문과 같아지는 크기로 둔다
-SIZE_HANGUL_SYLLABLE  = 2.8;   // 한/A 의 '한'. 완성형 글자는 크게 그려져 이 크기에서 영문 대문자와 높이가 비슷하다
 SIZE_SYMBOL           = 3.0;   // 숫자열처럼 위/아래 두 벌
 SIZE_ICON             = 3.2;   // fn (모서리)
 SIZE_ARROW            = 1.8;   // ▲◀▼▶ 는 이 글꼴에서 크게 그려져 있어 폭이 약 2.3mm 가 되는 크기로 둔다
@@ -183,7 +183,7 @@ MARGIN     = 1.3;     // 상판 가장자리 여백 (mm)
 TOP_HEIGHT = 14.05;   // oem 상판 세로 (mm)
 
 // 영문 소문자 a~z 의 [글자 폭, 왼쪽 여백, 오른쪽 여백] (em). 글꼴 파일에서 읽은 값이다.
-// 플러시 단어는 소문자만 쓴다. 글꼴을 바꾸면 이 표를 다시 뽑아야 한다 (SKILL.md 13)
+// 플러시 단어는 소문자와 띄어쓰기만 쓴다. 글꼴을 바꾸면 이 표와 LATIN_SPACE 를 다시 뽑아야 한다 (SKILL.md 13)
 LATIN_METRICS = [
   [0.606, 0.047, 0.065], [0.658, 0.072, 0.043], [0.537, 0.040, 0.026],   // a b c
   [0.658, 0.043, 0.071], [0.596, 0.040, 0.042], [0.398, 0.026, -0.035],  // d e f
@@ -195,7 +195,8 @@ LATIN_METRICS = [
   [0.607, 0.014, 0.014], [0.897, 0.028, 0.028], [0.598, 0.016, 0.016],   // v w x
   [0.604, 0.014, 0.013], [0.532, 0.044, 0.027]                           // y z
 ];
-function latin_metric(c) = LATIN_METRICS[ord(c) - ord("a")];
+LATIN_SPACE = 0.229;   // 띄어쓰기 폭(em). 글꼴 파일에서 읽은 값이다
+function latin_metric(c) = c == " " ? [LATIN_SPACE, 0, 0] : LATIN_METRICS[ord(c) - ord("a")];
 
 function top_width(width) = 18.05 + 19.05 * (width - 1) - 5.8;   // oem 상판 폭 (mm)
 
@@ -232,18 +233,6 @@ function ALPHA(latin, hangul) = [[latin,  POS_BOTTOM_LEFT, SIZE_LATIN],
 function ALPHA_DOUBLE(latin, hangul, double_hangul) =
   concat(ALPHA(latin, hangul), [[double_hangul, POS_TOP_LEFT, SIZE_HANGUL]]);
 function SIDE(text) = [[text, POS_CENTER, symbol_size(text, SIZE_SIDE)]];
-
-// caps lock 자리의 "한/A" (맥북 한글 자판). 한과 /A 는 크기가 달라 따로 놓고, / 와 A 도 나눈다 (SKILL.md 13)
-HAN_A_CENTER = [1.66, 4.42, 6.47];   // 한, /, A 의 중심 - 왼쪽 여백(MARGIN) 끝에서 잰 거리(mm). 굵히기 전 값
-
-function left_flush_x(width, offset) =
-  (offset + MARGIN - top_width(width) / 2) * 3.5 / top_width(width);
-
-// 굵히면 글자마다 사방으로 LEGEND_BOLD 만큼 커지므로, '한' 왼쪽 끝과 살 0.70 이 그대로 남게 민다
-function HAN_A(width) =
-  [["한", [left_flush_x(width, HAN_A_CENTER[0] +     LEGEND_BOLD), 0.85], SIZE_HANGUL_SYLLABLE],
-   ["/",  [left_flush_x(width, HAN_A_CENTER[1] + 3 * LEGEND_BOLD), 0.85], SIZE_WORD],
-   ["A",  [left_flush_x(width, HAN_A_CENTER[2] + 5 * LEGEND_BOLD), 0.85], SIZE_WORD]];
 
 // ---------------------------------------------------------------
 // 우측 시프트 - 스위치 2개를 캡 하나로 덮는다 (듀얼 스템)
@@ -384,46 +373,10 @@ module globe2d() {
 // (도형 좌표계는 각인 좌표계와 y 부호가 반대다)
 GLOBE_POSITION = [-top_width(1.25) / 3.5 * 0.98, -TOP_HEIGHT / 3.5 * 0.82];
 
-// -- 보조메뉴(우클릭) -------------------------------------------
-//   문서(가로줄 3개) + 오른쪽 아래 마우스 커서
-MENU_WIDTH          = 3.7;
-MENU_HEIGHT         = 4.3;
-MENU_THICKNESS      = 0.50;   // 문서 외곽 선폭
-MENU_RADIUS         = 0.4;
-MENU_LINE_COUNT     = 3;
-MENU_LINE_WIDTH     = 1.6;    // 좌우 안쪽 여백 0.55씩
-MENU_LINE_THICKNESS = 0.50;
-MENU_LINE_PITCH     = 1.0;    // 줄 사이 남는 살 0.5
-MENU_CURSOR_SCALE   = 1.6;    // 커서 배율. 줄이면 꼬리(약 0.49mm)가 사라진다
-MENU_CURSOR_X       = 1.45;   // 커서 끝점 x. 문서 오른쪽 테두리에 물려 얇은 살을 없앤다
-MENU_CURSOR_Y       = -0.9;
-
-// 마우스 커서 윤곽 (끝점 = 원점, 아래로 뻗음)
+// -- 마우스 커서 윤곽 ---------------------------------------------
+//   마우스 키 클릭 아이콘(click2d)이 쓴다. 끝점 = 원점, 아래로 뻗는다
 MENU_CURSOR = [[0,0], [0,-1.05], [0.26,-0.80], [0.46,-1.22],
                [0.74,-1.08], [0.54,-0.68], [0.82,-0.62]];
-
-// 문서+커서 전체를 상판 정중앙에 맞추는 보정.
-// 0.82 / 1.22 는 MENU_CURSOR 윤곽의 오른쪽 끝과 아래쪽 끝이다
-MENU_BOUNDS_X = [min(-MENU_WIDTH  / 2, MENU_CURSOR_X),
-                 max( MENU_WIDTH  / 2, MENU_CURSOR_X + 0.82 * MENU_CURSOR_SCALE)];
-MENU_BOUNDS_Y = [min(-MENU_HEIGHT / 2, MENU_CURSOR_Y - 1.22 * MENU_CURSOR_SCALE),
-                 max( MENU_HEIGHT / 2, MENU_CURSOR_Y)];
-MENU_POSITION = [-(MENU_BOUNDS_X[0] + MENU_BOUNDS_X[1]) / 2,
-                 -(MENU_BOUNDS_Y[0] + MENU_BOUNDS_Y[1]) / 2];
-
-module menu2d() {
-  $fn = 32;
-  difference() {                                    // 문서 테두리
-    rect([MENU_WIDTH, MENU_HEIGHT], rounding = MENU_RADIUS);
-    rect([MENU_WIDTH - 2 * MENU_THICKNESS, MENU_HEIGHT - 2 * MENU_THICKNESS],
-         rounding = max(MENU_RADIUS - MENU_THICKNESS, 0.05));
-  }
-  for (line = [0 : MENU_LINE_COUNT - 1])            // 내부 가로줄
-    back((line - (MENU_LINE_COUNT - 1) / 2) * MENU_LINE_PITCH)
-      rect([MENU_LINE_WIDTH, MENU_LINE_THICKNESS]);
-  move([MENU_CURSOR_X, MENU_CURSOR_Y])              // 커서
-    scale(MENU_CURSOR_SCALE) polygon(MENU_CURSOR);
-}
 
 // -- 맥 F키 특수기능 아이콘 12종 --------------------------------
 //   전부 원점 기준으로 가운데를 맞춰 그렸다. 크기는 3~4mm 대.
@@ -522,7 +475,7 @@ ARROW_HEAD_LENGTH = 1.3;
 ARROW_HEAD_WIDTH  = 2.2;
 ARROW_THICKNESS   = 0.6;   // 화살대 굵기
 
-CLICK_CURSOR_SCALE = 2.0;              // 보조메뉴 커서(MENU_CURSOR) 배율
+CLICK_CURSOR_SCALE = 2.0;              // 커서 윤곽(MENU_CURSOR) 배율
 CLICK_RAY_ANGLES   = [90, 135, 180];   // 포인터 끝에서 뻗는 클릭선 방향
 CLICK_RAY_START    = 1.15;             // 45도 간격에서 선 사이 살이 0.4 가 되는 최소 거리
 CLICK_RAY_LENGTH   = 0.9;              // 왼쪽 클릭선 끝과 마우스 사이 살 0.45. 늘리면 여기가 먼저 좁아진다
@@ -583,8 +536,8 @@ module mouse_key2d(name) {
   else if (name == "mouse_down")  mouse_pair2d() rotate(270) arrow2d();
 }
 
-// -- 수정키·스페이스 아이콘 ----------------------------------
-//   글꼴에 ⌃⌥ 가 없고 ⌘ ␣ 는 선이 0.2mm 대로 가늘어 직접 그린다 (SKILL.md 14).
+// -- 수정키·스페이스·메뉴 아이콘 -----------------------------
+//   글꼴에 ⌃⌥ 와 컨텍스트 메뉴 기호가 없고 ⌘ ␣ 는 선이 0.2mm 대로 가늘어 직접 그린다 (SKILL.md 14).
 //   KEYCAP 에는 ICON_SHAPE(이름, 위치) 로 준다. 위치는 각인과 같은 좌표다
 KEY_ICON_THICKNESS = 0.7;   // 옆 소문자 단어(ctrl / opt / cmd, 굵힌 뒤 획 0.68)와 같은 굵기
 
@@ -645,11 +598,25 @@ module space2d() {               // ␣. 위가 트인 U 자
   }
 }
 
+MENU_SIZE   = [3.4, 4.4];   // 잉크 가로 x 세로. 세로로 긴 둥근 상자
+MENU_RADIUS = 0.8;          // 바깥 모서리 반지름
+
+module menu2d() {                // 애플 컨텍스트 메뉴 키. 둥근 상자를 가운데 막대가 위아래로 나눈다
+  t = KEY_ICON_THICKNESS;
+  $fn = 32;
+  difference() {
+    rect(MENU_SIZE, rounding = MENU_RADIUS);
+    rect(MENU_SIZE - [2 * t, 2 * t], rounding = max(MENU_RADIUS - t, 0.05));
+  }
+  rect([MENU_SIZE[0] - t, t]);   // 가운데 막대. 양 끝을 테두리에 물린다
+}
+
 module key_icon2d(kind) {
   if      (kind == "control")   control2d();
   else if (kind == "option")    option2d();
   else if (kind == "command")   command2d();
   else if (kind == "space")     space2d();
+  else if (kind == "menu")      menu2d();
 }
 
 // -- '-' 키 (_ / -) --------------------------------------------
@@ -673,7 +640,7 @@ function legend_point(align) =
 //   선폭 0.45 / 0.5 로 설계한 아이콘을 키워서(scale) 살을 넓힌 뒤 윤곽을 불려(offset) 선폭 0.7 로 맞춘다.
 //   [배율 s, 불림 d] 에서 선폭 w 는 w·s + 2d, 살 g 는 g·s - 2d 가 된다. 살 0.4 가 그대로 남는 값이다 (SKILL.md 14)
 FKEY_ICON_GROW = [1.30, 0.060];   // F키 아이콘 12종: 선폭 0.45 → 0.71
-LINE_ICON_GROW = [1.23, 0.045];   // 보조메뉴 · 마우스 키: 선폭 0.5 → 0.71
+LINE_ICON_GROW = [1.23, 0.045];   // 마우스 키: 선폭 0.5 → 0.71
 
 module grown(grow) { offset(delta = grow[1]) scale(grow[0]) children(); }
 
@@ -701,11 +668,21 @@ module front_shape_at(profile) {
           children();
 }
 
+// 캡스락 표시등 구멍. 상판을 위아래로 뚫어 백라이트가 점으로 보이게 한다 (SKILL.md 13)
+CAPS_LOCK_HOLE_DIAMETER = 1.2;
+CAPS_LOCK_HOLE_INSET    = 2.7;   // 상판 왼쪽 끝 -> 구멍 중심(mm). 캡 안쪽 빈 공간 위라야 옆벽을 안 뚫는다
+
+module caps_lock_hole() {
+  top_of_key()
+    translate([-top_total_key_width() / 2 + CAPS_LOCK_HOLE_INSET, legend_point(POS_TOP)[1], -4])
+      cylinder(h = 8, d = CAPS_LOCK_HOLE_DIAMETER, $fn = 32);
+}
+
 module shape_cut(shape, profile) {
   if      (is_list(shape))   shape_at(legend_point(shape[1]), profile) key_icon2d(shape[0]);
   else if (shape == "globe") shape_at(GLOBE_POSITION, profile) globe2d();
-  else if (shape == "menu")  shape_at([0, 0], profile) grown(LINE_ICON_GROW) move(MENU_POSITION) menu2d();
   else if (shape == "minus") shape_at([0, 0], profile) minus_key2d();
+  else if (shape == "caps_lock_hole") caps_lock_hole();
   else if (starts_with(shape, "mouse_")) front_shape_at(profile) grown(LINE_ICON_GROW) mouse_key2d(shape);
   else                       shape_at(FUNCTION_KEY_POSITION, profile) grown(FKEY_ICON_GROW) function_key2d(shape);
 }
@@ -908,7 +885,7 @@ LEFT_ROW_3 = [1, [ KEYCAP(1.5, WORD("tab", "wl")),
                    KEYCAP(1, ALPHA_DOUBLE("R", "ㄱ", "ㄲ")),
                    KEYCAP(1, ALPHA_DOUBLE("T", "ㅅ", "ㅆ")) ]];
 
-LEFT_ROW_4 = [2, [ KEYCAP(1.75, HAN_A(1.75)),
+LEFT_ROW_4 = [2, [ KEYCAP(1.75, WORD("caps lock", "wl"), shape = "caps_lock_hole"),
                    KEYCAP(1, ALPHA("A", "ㅁ"), shape = "mouse_left"),
                    KEYCAP(1, ALPHA("S", "ㄴ"), shape = "mouse_click"),
                    KEYCAP(1, ALPHA("D", "ㅇ"), shape = "mouse_right"),
@@ -959,7 +936,7 @@ RIGHT_ROW_2 = [0, [ KEYCAP(1, SYMBOL("&", "7"), SIDE("7")),
                     KEYCAP(1, SYMBOL("+", "=")),
                     KEYCAP(1.5, WORD("bksp", "wr")),
                     GAP(1),
-                    KEYCAP(1, shape = "menu") ]];                // 보조메뉴(우클릭)
+                    KEYCAP(1, shape = ICON_SHAPE("menu")) ]];   // 컨텍스트 메뉴(우클릭)
 
 RIGHT_ROW_3 = [1, [ KEYCAP(1, ALPHA("Y", "ㅛ")),
                     KEYCAP(1, ALPHA("U", "ㅕ"), SIDE("4")),
