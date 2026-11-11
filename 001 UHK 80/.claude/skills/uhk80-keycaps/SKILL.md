@@ -205,6 +205,8 @@ STL 도 만들어지지 않으므로 따로 검증하지 않는다.
 - 좌측 시프트 : 바깥 기둥 0.35 에서 눌린 채 안 올라옴 → 일반 높이보다 한 단계 더 **바깥**을 줄인다 (`LEFT_SHIFT_STEM_SLOP`, 10 번).
 - 윗줄 저프로파일 : 십자가 너무 꽉 물림 → 이 줄만 **안쪽**을 넓힌다 (`FUNCTION_ROW_LOW_INNER_SLOP`).
   엄지열은 그대로 `LOW_PROFILE_STEM_INNER_SLOP` 를 쓴다.
+- 화살표 4개(▲ ◀ ▼ ▶) : 0.30 에서 ▶ 가 가끔 빠짐 → 이 키들만 **안쪽**을 0.20 으로 조인다 (`ARROW_INNER_SLOP`).
+  0.20 은 일반 높이에서 가끔 안 꽂히던 값이라 끼울 때 드라이기로 데운다.
 
 **지금 값** — 전부 레진 출력에서 맞춘 값이다.
 
@@ -213,6 +215,7 @@ STL 도 만들어지지 않으므로 따로 검증하지 않는다.
 | `STANDARD_STEM_INNER_SLOP` | 0.30 | 0.05 로 스템이 부러졌고 0.20 에서 가끔 안 꽂혔다 |
 | `LEFT_SHIFT_INNER_SLOP` | 0.30 | 일반 높이 값과 같다. 0.05 로 안 들어갔다 (10 번) |
 | `RIGHT_SHIFT_INNER_SLOP` | 0.30 | 일반 높이 값과 같다 (9 번) |
+| `ARROW_INNER_SLOP` | 0.20 | 화살표 4개. 0.30 에서 ▶ 가 가끔 빠졌다 |
 | `FUNCTION_ROW_LOW_INNER_SLOP` | 0.35 | 0.20 이 꽉 물렸다 |
 | `LOW_PROFILE_STEM_INNER_SLOP` | 0.20 | KeyV2 기본. 엄지열이 쓴다 |
 | `LOW_PROFILE_STEM_SLOP` (바깥) | 0.55 | 0.45 로도 눌린 채 안 올라왔다 |
@@ -240,7 +243,7 @@ STL 도 만들어지지 않으므로 따로 검증하지 않는다.
 | 0.50 | 1.417 / 1.317 | 4.53 | 윗줄 저프로파일이 0.35 로도 꽉 물리면 |
 | 0.35 | 1.367 / 1.267 | 4.38 | `FUNCTION_ROW_LOW_INNER_SLOP`. 0.20 이 너무 꽉 물렸다 |
 | 0.30 | 1.350 / 1.250 | 4.33 | `STANDARD_STEM_INNER_SLOP` / `LEFT_SHIFT_INNER_SLOP` / `RIGHT_SHIFT_INNER_SLOP`. 일반 높이에서 0.20 이 가끔 안 꽂혔다 |
-| 0.20 | 1.317 / 1.217 | 4.23 | KeyV2 기본. `LOW_PROFILE_STEM_INNER_SLOP` |
+| 0.20 | 1.317 / 1.217 | 4.23 | KeyV2 기본. `LOW_PROFILE_STEM_INNER_SLOP` / `ARROW_INNER_SLOP` |
 | 0.05 | 1.267 / 1.167 | 4.08 | 스템이 부러지고 시프트는 안 들어갔다 |
 | 0.00 | 1.250 / 1.150 | 4.03 | 이 노브의 한계 |
 

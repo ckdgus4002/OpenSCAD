@@ -39,6 +39,11 @@ RENDER = [
   KEY("R", "6", "1"),
   KEY("L", "3", "0"),
   KEY("R", "1", "8"),
+  KEY("R", "4", "6"),
+  KEY("R", "5", "5"),
+  KEY("R", "5", "6"),
+  KEY("R", "5", "7"),
+  KEY("R", "2", "9"),
 ];
 
 // [프린트 베드] 가로 폭만 쓴다. 세로는 넘치면 그냥 줄이 늘어날 뿐이라 안 본다
@@ -958,6 +963,8 @@ RIGHT_ROW_4 = [2, [ KEYCAP(1, ALPHA("H", "ㅗ")),
                     KEYCAP(1.75, WORD("return", "wr")),
                     GAP(1), GAP(1) ]];
 
+ARROW_INNER_SLOP = 0.20;   // 화살표 4개만 십자 슬롯을 조인다. 0.30 은 ▶ 가 가끔 빠졌다 (SKILL.md 7)
+
 RIGHT_ROW_5 = [3, [ KEYCAP(1, ALPHA("N", "ㅜ")),
                     KEYCAP(1, ALPHA("M", "ㅡ"), SIDE("0")),
                     KEYCAP(1, SYMBOL("<", ","), SIDE("0")),
@@ -966,7 +973,8 @@ RIGHT_ROW_5 = [3, [ KEYCAP(1, ALPHA("N", "ㅜ")),
                     // 순정 [1.25U 시프트] + [1U] 두 칸을 한 캡으로. 스위치 2개, 듀얼 스템
                     KEYCAP(2.25, WORD("shift", "wr"), stems = RIGHT_SHIFT_STEMS,
                            inner_slop = RIGHT_SHIFT_INNER_SLOP),
-                    KEYCAP(1, ICON("▲", POS_CENTER, SIZE_ARROW)),
+                    KEYCAP(1, ICON("▲", POS_CENTER, SIZE_ARROW),
+                           inner_slop = ARROW_INNER_SLOP),
                     GAP(1) ]];
 
 RIGHT_ROW_6 = [4, [ THUMB_SPACE(true),
@@ -976,9 +984,12 @@ RIGHT_ROW_6 = [4, [ THUMB_SPACE(true),
                     KEYCAP(1.25, WORD("opt", "wr"),
                            shape = ICON_SHAPE("option", POS_ICON_TOP_LEFT)),
                     GAP(1.25),
-                    KEYCAP(1, ICON("◀", POS_CENTER, SIZE_ARROW)),
-                    KEYCAP(1, ICON("▼", POS_CENTER, SIZE_ARROW)),
-                    KEYCAP(1, ICON("▶", POS_CENTER, SIZE_ARROW)) ]];
+                    KEYCAP(1, ICON("◀", POS_CENTER, SIZE_ARROW),
+                           inner_slop = ARROW_INNER_SLOP),
+                    KEYCAP(1, ICON("▼", POS_CENTER, SIZE_ARROW),
+                           inner_slop = ARROW_INNER_SLOP),
+                    KEYCAP(1, ICON("▶", POS_CENTER, SIZE_ARROW),
+                           inner_slop = ARROW_INNER_SLOP) ]];
 
 // 엄지열 - 저프로파일
 //   2U 는 스템 3개 (스위치 + 스태빌 2), 사다리꼴. 1U 는 중앙 1개, 직사각형
